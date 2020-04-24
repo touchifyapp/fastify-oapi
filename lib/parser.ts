@@ -9,7 +9,8 @@ import {
     ParameterObject,
     RequestBodyObject,
     ResponseObject,
-    SchemaObject
+    SchemaObject,
+    ReferenceObject
 } from "openapi3-ts";
 
 const HttpOperations = new Set([
@@ -23,6 +24,8 @@ const HttpOperations = new Set([
 ]);
 
 export interface ParsedConfig {
+    $refs: $RefParser.$Refs;
+    shared: SchemaObject | undefined;
     generic: Omit<OpenAPIObject, "paths">;
     routes: ParsedRoute[];
     prefix?: string;
@@ -38,15 +41,17 @@ export interface ParsedRoute {
 }
 
 export default async function parse(specOrPath: string | OpenAPIObject): Promise<ParsedConfig> {
-    const spec = await dereference(specOrPath);
+    const spec = await bundleSpecification(specOrPath); //await dereference(specOrPath);
 
     if (!spec?.openapi?.startsWith("3.0")) {
         throw new Error("The 'specification' parameter must contain a valid version 3.0.x specification");
     }
 
     const config: ParsedConfig = {
+        $refs: await $RefParser.resolve(spec),
+        shared: createSharedSchema(spec),
         generic: {} as any,
-        routes: []
+        routes: [],
     };
 
     const keys = Object.keys(spec) as Array<keyof OpenAPIObject>;
@@ -55,7 +60,7 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
             processPaths(config, spec.paths);
         }
         else {
-            config.generic[key] = (spec as any)[key];
+            config.generic[key] = spec[key];
         }
     });
 
@@ -64,8 +69,18 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
 
 //#region Parser
 
-async function dereference(spec: string | OpenAPIObject): Promise<OpenAPIObject> {
-    return await $RefParser.dereference(spec) as OpenAPIObject;
+function createSharedSchema(spec: OpenAPIObject): SchemaObject | undefined {
+    if (!spec.definitions && !spec.components?.schemas) {
+        return;
+    }
+
+    return {
+        $id: "urn:schema:api",
+        definitions: parseSchemaItems(spec.definitions),
+        components: {
+            schemas: parseSchemaItems(spec.components?.schemas)
+        }
+    };
 }
 
 /** Process OpenAPI Paths. */
@@ -79,14 +94,15 @@ function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject
         copyProps(pathItem, genericSchema, copyItems);
 
         if (Array.isArray(pathItem.parameters)) {
-            parseParameters(genericSchema, pathItem.parameters as ParameterObject[]);
+            parseParameters(config, genericSchema, pathItem.parameters);
         }
 
-        for (const operation in pathItem) {
-            if (isHttpVerb(operation) && pathItem[operation]) {
-                processOperation(config, path, operation, pathItem[operation] as OperationObject, genericSchema);
+        Object.keys(pathItem).forEach(verb => {
+            const operation = pathItem[verb];
+            if (isHttpVerb(verb) && operation) {
+                processOperation(config, path, verb, operation, genericSchema);
             }
-        }
+        });
     }
 }
 
@@ -99,7 +115,7 @@ function processOperation(config: ParsedConfig, path: string, method: string, op
     const route = {
         method: method.toUpperCase(),
         url: makeURL(path),
-        schema: parseOperationSchema(genericSchema, operation),
+        schema: parseOperationSchema(config, genericSchema, operation),
         operationId: operation.operationId || makeOperationId(method, path),
         openapiSource: operation
     };
@@ -108,21 +124,21 @@ function processOperation(config: ParsedConfig, path: string, method: string, op
 }
 
 /** Build fastify RouteSchema based on OpenAPI Operation */
-function parseOperationSchema(genericSchema: RouteSchema, operation: OperationObject): RouteSchema {
+function parseOperationSchema(config: ParsedConfig, genericSchema: RouteSchema, operation: OperationObject): RouteSchema {
     const schema = Object.assign({}, genericSchema);
 
     copyProps(operation, schema, ["tags", "summary", "description", "operationId"]);
 
     if (operation.parameters) {
-        parseParameters(schema, operation.parameters as ParameterObject[]);
+        parseParameters(config, schema, operation.parameters);
     }
 
-    const body = parseBody(operation.requestBody as RequestBodyObject);
+    const body = parseBody(config, operation.requestBody);
     if (body) {
         schema.body = body;
     }
 
-    const response = parseResponses(operation.responses);
+    const response = parseResponses(config, operation.responses);
     if (response) {
         schema.response = response;
     }
@@ -131,12 +147,13 @@ function parseOperationSchema(genericSchema: RouteSchema, operation: OperationOb
 }
 
 /** Parse Open API params for Query/Params/Headers and include them into RouteSchema. */
-function parseParameters(schema: RouteSchema, parameters: ParameterObject[]): void {
+function parseParameters(config: ParsedConfig, schema: RouteSchema, parameters: Array<ParameterObject | ReferenceObject>): void {
     const params: ParameterObject[] = [];
     const querystring: ParameterObject[] = [];
     const headers: ParameterObject[] = [];
 
     parameters.forEach(item => {
+        item = resolveReference(item, config);
         switch (item.in) {
             case "path":
                 params.push(item);
@@ -165,13 +182,13 @@ function parseParameters(schema: RouteSchema, parameters: ParameterObject[]): vo
 
 /** Parse Open API params for Query/Params/Headers. */
 function parseParams(base: SchemaObject | undefined, parameters: ParameterObject[]): SchemaObject {
-    const properties: Record<string, SchemaObject> = {};
+    const properties: Record<string, SchemaObject | ReferenceObject> = {};
 
     const required: string[] = [];
     const baseRequired = new Set(base?.required ?? []);
 
     parameters.forEach(item => {
-        properties[item.name] = item.schema as SchemaObject;
+        properties[item.name] = parseSchema(item.schema);
 
         copyProps(item, properties[item.name], ["description"]);
 
@@ -197,13 +214,18 @@ function parseParams(base: SchemaObject | undefined, parameters: ParameterObject
 }
 
 /** Parse Open API responses */
-function parseResponses(responses?: Record<string, RequestBodyObject | ResponseObject>): Record<string, SchemaObject> | null {
+function parseResponses(config: ParsedConfig, responses?: Record<string, ResponseObject | ReferenceObject>): Record<string, SchemaObject> | null {
     const result: Record<string, SchemaObject> = {};
 
     let hasResponse = false;
-    for (const httpCode in responses) {
-        const body = parseBody(responses[httpCode]);
-        if (body !== undefined) {
+    for (let httpCode in responses) {
+        const body = parseBody(config, responses[httpCode]);
+
+        if (httpCode === "default") {
+            httpCode = "xxx";
+        }
+
+        if (body) {
             result[httpCode] = body;
             hasResponse = true;
         }
@@ -213,13 +235,43 @@ function parseResponses(responses?: Record<string, RequestBodyObject | ResponseO
 }
 
 /** Parse Open API content contract to prepare RouteSchema */
-function parseBody(body?: RequestBodyObject | ResponseObject): SchemaObject | undefined {
-    let schema: SchemaObject | undefined;
+function parseBody(config: ParsedConfig, body?: RequestBodyObject | ResponseObject | ReferenceObject): SchemaObject | ReferenceObject | undefined {
+    body = resolveReference(body, config);
+
     if (body?.content?.["application/json"]) {
-        schema = body.content["application/json"].schema;
+        return parseSchema(body.content["application/json"].schema);
+    }
+}
+
+/** Parse a schema and inject shared reference if needed. */
+function parseSchema(schema: SchemaObject | ReferenceObject | undefined): SchemaObject | ReferenceObject {
+    if (!schema) return {};
+    return parseSchemaItems(schema);
+}
+
+function parseSchemaItems(item: any): any {
+    if (!item) {
+        return item;
     }
 
-    return schema;
+    if (Array.isArray(item)) {
+        return item.map(parseSchemaItems);
+    }
+
+    if (typeof item === "object") {
+        if (isReference(item)) {
+            return { $ref: "urn:schema:api" + item.$ref }; //item.$ref.replace("#/components/schemas", "urn:schema:api#/definitions") };
+        }
+
+        const res: any = {};
+        for (const key in item) {
+            res[key] = parseSchemaItems(item[key]);
+        }
+
+        return res;
+    }
+
+    return item;
 }
 
 //#endregion
@@ -238,6 +290,25 @@ function makeOperationId(method: string, path: string): string {
         .join("")
         .replace(/{(\w+)}/g, (_, p1) => "By" + firstUpper(p1))
         .replace(/[^a-z]/gi, "");
+}
+
+/** Bundle Specification file. */
+async function bundleSpecification(spec: string | OpenAPIObject): Promise<OpenAPIObject> {
+    return await $RefParser.bundle(spec) as OpenAPIObject;
+}
+
+/** Resolves external reference */
+function resolveReference<T>(obj: T | ReferenceObject, config: ParsedConfig): T {
+    if (!isReference(obj)) {
+        return obj;
+    }
+
+    return config.$refs.get(obj.$ref) as unknown as T;
+}
+
+/** Check if specified Object is a reference. */
+function isReference(obj: any): obj is ReferenceObject {
+    return obj && "$ref" in obj;
 }
 
 /** Adjust URLs from OpenAPI to fastify. (openapi: 'path/{param}' => fastify: 'path/:param'). */

@@ -35,8 +35,9 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
     fastify.register(generateRoutes, routeConf);
 
     async function generateRoutes(instance: FastifyInstance): Promise<void> {
-        // Object.values(config.shared)
-        //     .forEach(schema => instance.addSchema(schema));
+        if (config.shared) {
+            instance.addSchema(config.shared);
+        }
 
         config.routes.forEach((item: ParsedRoute) => {
             if (item.schema.response) {
