@@ -7,7 +7,6 @@ import { stripResponseFormats } from "./lib/util";
 export interface FastifyOApiOptions {
     controller: Record<string, RequestHandler<any, any, any, any, any, any>>;
     specification: string;
-    removeAdditional?: boolean;
     prefix?: string;
 }
 
@@ -26,17 +25,6 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
     const config = await parse(specification);
     const routeConf: RouterConfig = {};
 
-    // AJV misses some validators for int32, int64 etc which ajv-oai adds
-    const Ajv = await import("ajv-oai");
-    const ajv = new Ajv({  // the fastify defaults
-        removeAdditional: options.removeAdditional !== false,
-        useDefaults: true,
-        coerceTypes: true,
-        nullable: true
-    });
-
-    fastify.setSchemaCompiler(schema => ajv.compile(schema));
-
     if (options.prefix) {
         routeConf.prefix = options.prefix;
     }
@@ -47,6 +35,9 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
     fastify.register(generateRoutes, routeConf);
 
     async function generateRoutes(instance: FastifyInstance): Promise<void> {
+        // Object.values(config.shared)
+        //     .forEach(schema => instance.addSchema(schema));
+
         config.routes.forEach((item: ParsedRoute) => {
             if (item.schema.response) {
                 stripResponseFormats(item.schema.response);

@@ -1,5 +1,4 @@
-import * as Fastify from "fastify";
-import openapi from "../";
+import { createFastify } from "./helpers";
 
 const TEST_SPEC = require("./assets/test-openapi.json");
 const PETSTORE_SPEC = require("./assets/petstore-openapi.json");
@@ -11,14 +10,13 @@ describe("fastify-oapi", () => {
     const controller = require(SERVICE_FILE);
     const options = {
         specification: TEST_SPEC,
-        controller
+        controller,
     };
 
     describe("Route Config", () => {
 
         test("should configure path parameters schema", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -29,8 +27,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should configure query parameters schema", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -41,8 +38,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should configure header parameters schema", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -56,8 +52,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should validate missing header parameters and return error 500", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -68,8 +63,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should validate missing authorization header and return error 500", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -80,8 +74,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should configure body schema", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "POST",
@@ -96,11 +89,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should validate extra body parameters if removeAdditional: false is passed and return error 400", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
-                ...options,
-                removeAdditional: false
-            });
+            const fastify = createFastify(options, { customOptions: { removeAdditional: false } });
 
             const res = await fastify.inject({
                 method: "POST",
@@ -115,8 +104,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should allow no parameters", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -127,8 +115,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should apply prefix option in parameters", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 ...options,
                 prefix: "prefix"
             });
@@ -142,8 +129,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should returns error 500 when operation is missing in controller", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -154,8 +140,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should configure response schema for valid responses", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -166,8 +151,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should configure response schema for error responses", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, options);
+            const fastify = createFastify(options);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -187,8 +171,7 @@ describe("fastify-oapi", () => {
         };
 
         test("should configure generic path parameters", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, genericPathItemsOpts);
+            const fastify = createFastify(genericPathItemsOpts);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -199,8 +182,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should override generic path parameters in operation", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, genericPathItemsOpts);
+            const fastify = createFastify(genericPathItemsOpts);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -211,8 +193,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should merge generic path parameters with operation parameters", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, genericPathItemsOpts);
+            const fastify = createFastify(genericPathItemsOpts);
 
             const res = await fastify.inject({
                 method: "GET",
@@ -227,8 +208,7 @@ describe("fastify-oapi", () => {
     describe("Utils", () => {
 
         test("should accept YAML configuration", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 specification: TEST_SPEC_YAML,
                 controller
             });
@@ -242,8 +222,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should block app startup on invalid Open API v3 specification throws error ", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 specification: { valid: false } as any,
                 controller
             });
@@ -256,8 +235,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should block app startup if missing service definition ", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 specification: TEST_SPEC_YAML,
                 controller: null as any
             });
@@ -270,8 +248,7 @@ describe("fastify-oapi", () => {
         });
 
         test("should load full PetStore V3 specification with no error ", async () => {
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 specification: PETSTORE_SPEC,
                 controller
             });
@@ -284,8 +261,7 @@ describe("fastify-oapi", () => {
             const spec301 = JSON.parse(JSON.stringify(PETSTORE_SPEC));
             spec301["openapi"] = "3.0.1";
 
-            const fastify = Fastify();
-            fastify.register(openapi, {
+            const fastify = createFastify({
                 specification: spec301,
                 controller
             });
