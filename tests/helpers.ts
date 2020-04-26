@@ -1,21 +1,9 @@
 import * as Fastify from "fastify";
-import openApi, { FastifyOApiOptions } from "../";
-
-import * as ajvOpenApi from "ajv-openapi";
+import openApi, { FastifyOApiOptions, getAjvOptions } from "../";
 
 export function createFastify(options: FastifyOApiOptions, ajvOptions: Fastify.ServerOptions["ajv"] = {}): Fastify.FastifyInstance {
     const fastify = Fastify({
-        ajv: {
-            customOptions: {
-                schemaId: "auto",
-                format: "full",
-                unknownFormats: "ignore",
-                ...ajvOptions.customOptions
-            },
-            plugins: [
-                [ajvOpenApi, { useDraft04: true }]
-            ]
-        }
+        ajv: getAjvOptions(ajvOptions.customOptions, ajvOptions.plugins as any[])
     });
 
     fastify.register(openApi, options);

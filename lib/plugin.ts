@@ -1,4 +1,8 @@
+import * as ajvOpenApi from "ajv-openapi";
+
 import type { FastifyInstance, RequestHandler, RouteOptions, ServerOptions } from "fastify";
+import type { Ajv, Options as AjvOptions } from "ajv";
+
 import parse, { ParsedRoute } from "./parser";
 import { stripResponseFormats } from "./util";
 
@@ -51,6 +55,18 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
     }
 }
 
+export type AjvPlugin = (ajv: Ajv) => Ajv;
+export type AjvPluginInit = AjvPlugin | [AjvPlugin] | [AjvPlugin, any];
+
+export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], useDraft04?: boolean): NonNullable<ServerOptions["ajv"]> {
+    return {
+        customOptions: ajvOpenApi.createOptions(options),
+        plugins: [
+            [ajvOpenApi, { useDraft04 }],
+            ...(plugins as any[] || [])
+        ]
+    };
+}
 
 interface RouterConfig {
     prefix?: string;
