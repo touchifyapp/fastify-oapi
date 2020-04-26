@@ -129,7 +129,7 @@ describe("fastify-oapi", () => {
             expect(res).toHaveProperty("statusCode", 200);
         });
 
-        test("should returns error 500 when operation is missing in controller", async () => {
+        test("should returns error 501 when operation is missing in controller", async () => {
             const fastify = createFastify(options);
 
             const res = await fastify.inject({
@@ -137,7 +137,7 @@ describe("fastify-oapi", () => {
                 url: "/noOperationId/1"
             });
 
-            expect(res).toHaveProperty("statusCode", 500);
+            expect(res).toHaveProperty("statusCode", 501);
         });
 
         test("should configure response schema for valid responses", async () => {
@@ -245,16 +245,15 @@ describe("fastify-oapi", () => {
                 );
         });
 
-        test("should block app startup if missing service definition ", async () => {
+        test("should block app startup if cannot determine controller resolution mode", async () => {
             const fastify = createFastify({
-                specification: TEST_SPEC_YAML,
-                controller: null as any
+                specification: TEST_SPEC_YAML
             });
 
             await expect(fastify.ready())
                 .rejects.toHaveProperty(
                     "message",
-                    "The `controller` parameter must be an object",
+                    "Cannot determine the default controller resolution mode"
                 );
         });
 

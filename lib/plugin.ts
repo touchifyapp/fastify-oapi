@@ -1,25 +1,19 @@
 import * as ajvOpenApi from "ajv-openapi";
 
-import type { FastifyInstance, RequestHandler, RouteOptions, ServerOptions } from "fastify";
+import type { FastifyInstance, RouteOptions, ServerOptions } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
 import parse, { ParsedRoute } from "./parser";
+import { ControllerOptions, createHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
-export interface FastifyOApiOptions {
-    controller: Record<string, RequestHandler<any, any, any, any, any, any>>;
+export interface FastifyOApiOptions extends ControllerOptions {
     specification: string;
     prefix?: string;
 }
 
 export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptions): Promise<void> {
-    const { controller, specification } = options;
-
-    if (!controller || typeof controller !== "object") {
-        throw new TypeError("The `controller` parameter must be an object");
-    }
-
-    const config = await parse(specification);
+    const config = await parse(options.specification);
     const routeConf: RouterConfig = {};
 
     if (options.prefix) {
@@ -36,21 +30,14 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
             instance.addSchema(config.shared);
         }
 
-        config.routes.forEach((item: ParsedRoute) => {
-            if (item.schema.response) {
-                stripResponseFormats(item.schema.response);
+        config.routes.forEach((route: ParsedRoute) => {
+            if (route.schema.response) {
+                stripResponseFormats(route.schema.response);
             }
 
-            if (controller[item.operationId]) {
-                item.handler = controller[item.operationId];
-            }
-            else {
-                item.handler = async () => {
-                    throw new Error(`Operation ${item.operationId} not implemented!`);
-                };
-            }
+            route.handler = createHandler(route, options);
 
-            instance.route(item as RouteOptions);
+            instance.route(route as RouteOptions);
         });
     }
 }
