@@ -1,5 +1,3 @@
-// implementation of the operations in the openapi specification
-
 import { FastifyRequest } from "fastify";
 
 // Operation: getPathParam
