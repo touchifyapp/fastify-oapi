@@ -4,6 +4,7 @@ const TEST_SPEC = require("./assets/test-openapi.json");
 const PETSTORE_SPEC = require("./assets/petstore-openapi.json");
 const SERVICE_FILE = `${__dirname}/assets/controller`;
 const TEST_SPEC_YAML = `${__dirname}/assets/test-openapi.yaml`;
+const EXPLODED_SPEC = `${__dirname}/assets/petstore-exploded.yaml`;
 const GENERIC_PATHITEMS_SPEC = require("./assets/test-openapi-generic-path-items.json");
 
 describe("fastify-oapi", () => {
@@ -219,6 +220,16 @@ describe("fastify-oapi", () => {
             });
 
             expect(res).toHaveProperty("statusCode", 200);
+        });
+
+        test("should accept external references", async () => {
+            const fastify = createFastify({
+                specification: EXPLODED_SPEC,
+                controller
+            });
+
+            await expect(fastify.ready())
+                .resolves.toBe(fastify);
         });
 
         test("should block app startup on invalid Open API v3 specification throws error ", async () => {

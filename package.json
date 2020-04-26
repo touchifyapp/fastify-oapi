@@ -1,14 +1,14 @@
 {
-  "name": "fastify-oapi",
+  "name": "fastify-openapi",
   "version": "0.0.0",
   "description": "Fastify plugin to make your fastify server fully compliant with Open API v3",
   "author": "Touchify <dev@touchify.co>",
   "license": "MIT",
   "main": "index.js",
-  "homepage": "https://github.com/touchifyapp/fastify-oapi#readme",
+  "homepage": "https://github.com/touchifyapp/fastify-openapi#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/touchifyapp/fastify-oapi"
+    "url": "https://github.com/touchifyapp/fastify-openapi"
   },
   "scripts": {
     "build": "npm run clean && npm run lint && npm run build:ts",
