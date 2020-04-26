@@ -1,8 +1,27 @@
-language: node_js
+if: tag IS blank
+
+git:
+  depth: 3
 
 sudo: false
 
+language: node_js
+
 node_js:
-  - "stable"
+  - "12"
   - "10"
   - "8"
+
+os:
+  - linux
+
+cache: npm
+
+install:
+  - npm ci
+
+script:
+  - npm run test:ci
+
+after_script:
+  - npm install coveralls && cat ./coverage/lcov.info | coveralls
