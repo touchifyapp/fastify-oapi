@@ -54,6 +54,10 @@
     "testEnvironment": "node",
     "testMatch": [
       "**/tests/**/*.spec.ts"
+    ],
+    "collectCoverageFrom": [
+      "*.ts",
+      "lib/**/*.ts"
     ]
   },
   "eslintConfig": {

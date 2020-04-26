@@ -219,7 +219,7 @@ describe("Controller Resolution", () => {
 
         describe("per-route", () => {
 
-            test("Should affect controllers per route", async () => {
+            test("should affect controllers per route", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     resolution: "per-route",
@@ -241,7 +241,7 @@ describe("Controller Resolution", () => {
                 expect(res2).toHaveProperty("statusCode", 200);
             });
 
-            test("Should autodect `per-route` mode if `controllersDir` is specified", async () => {
+            test("should autodect `per-route` mode if `controllersDir` is specified", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     controllersDir: CONTROLLERS_DIR
@@ -279,7 +279,7 @@ describe("Controller Resolution", () => {
 
         describe("per-operation", () => {
 
-            test("Should affect controllers per route", async () => {
+            test("should affect controllers per route", async () => {
                 const fastify = createFastify({
                     specification: PER_OPERATION_SPEC,
                     resolution: "per-operation",
@@ -318,7 +318,7 @@ describe("Controller Resolution", () => {
 
         describe("manual", () => {
 
-            test("Should accept direct routing", async () => {
+            test("should accept direct routing", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     controllersDir: CONTROLLERS_DIR,
@@ -340,7 +340,7 @@ describe("Controller Resolution", () => {
 
             });
 
-            test("Should accept prefix routing", async () => {
+            test("should accept prefix routing", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     controllersDir: CONTROLLERS_DIR,
@@ -362,7 +362,7 @@ describe("Controller Resolution", () => {
 
             });
 
-            test("Should accept RegExp routing", async () => {
+            test("should accept RegExp routing", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     controllersDir: CONTROLLERS_DIR,
@@ -384,7 +384,7 @@ describe("Controller Resolution", () => {
 
             });
 
-            test("Should fallback to default controller", async () => {
+            test("should fallback to default controller", async () => {
                 const fastify = createFastify({
                     specification: PETSTORE_SPEC,
                     controllersDir: CONTROLLERS_DIR,
@@ -417,6 +417,27 @@ describe("Controller Resolution", () => {
                         "message",
                         "The `manual` resolution mode needs a `resolutionConfig` option"
                     );
+            });
+
+            test("should autodect `manual` mode if `resolutionConfig` is specified", async () => {
+                const fastify = createFastify({
+                    specification: PETSTORE_SPEC,
+                    controllersDir: CONTROLLERS_DIR,
+                    resolutionConfig: {
+                        "/pet/findByStatus": "pet.controller",
+                        "/user": "user.controller",
+                        "/store/(.*)": "store.controller",
+                        "default": "default.controller"
+                    }
+                });
+
+                const res = await fastify.inject({
+                    method: "GET",
+                    url: "/pet/findByStatus?status=available&status=pending"
+                });
+
+                expect(res).toHaveProperty("statusCode", 200);
+
             });
 
         });
