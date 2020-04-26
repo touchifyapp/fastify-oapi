@@ -6,7 +6,7 @@ import { ParsedRoute } from "./parser";
 
 export type Controller = Record<string, RequestHandler>;
 export type ControllerConstructor = { new(): Controller };
-export type ControllerFactory = () => Controller;
+export type ControllerFactory = () => Controller | Promise<Controller>;
 
 export type ControllerResolution = "per-route" | "per-operation" | "manual" | "unique";
 export type ControllerConfig = string | Controller | ControllerConstructor | ControllerFactory;
@@ -18,15 +18,15 @@ export interface ControllerOptions {
     resolutionConfig?: Record<string, ControllerConfig>;
 }
 
-export function createHandler(route: ParsedRoute, options: ControllerOptions): RequestHandler {
+export async function createHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler> {
     const resolutions = getDefaultResolution(options);
     if (!Array.isArray(resolutions)) {
-        return createControllerHandler(resolutions, route, options) ||
+        return await createControllerHandler(resolutions, route, options) ||
             createControllerDefaultHandler(route);
     }
 
     for (const resolution of resolutions) {
-        const handler = createControllerHandler(resolution, route, options);
+        const handler = await createControllerHandler(resolution, route, options);
         if (handler) {
             return handler;
         }
@@ -35,28 +35,28 @@ export function createHandler(route: ParsedRoute, options: ControllerOptions): R
     return createControllerDefaultHandler(route);
 }
 
-export function createController(config: ControllerConfig, options: ControllerOptions): Controller {
+export async function createController(config: ControllerConfig, options: ControllerOptions): Promise<Controller> {
     if (typeof config === "string") {
-        config = importController(config, options);
-    }
-
-    if (typeof config === "object") {
-        return config;
+        return createController(importController(config, options), options);
     }
 
     if (typeof config === "function") {
         if (isControllerConstructor(config)) {
-            return new config();
+            return createController(new config(), options);
         }
         else {
-            return config();
+            return createController(await resolvePromise(config), options);
         }
+    }
+
+    if (typeof config === "object" && config !== null) {
+        return config;
     }
 
     throw new Error("The controller should be an `object`, a `function` or a `constructor`");
 }
 
-function createControllerHandler(resolution: ControllerResolution, route: ParsedRoute, options: ControllerOptions): RequestHandler | void {
+async function createControllerHandler(resolution: ControllerResolution, route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
     switch (resolution) {
         case "manual":
             return createControllerManualHandler(route, options);
@@ -69,52 +69,52 @@ function createControllerHandler(resolution: ControllerResolution, route: Parsed
     }
 }
 
-function createControllerManualHandler(route: ParsedRoute, options: ControllerOptions): RequestHandler | void {
+async function createControllerManualHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
     const config = options.resolutionConfig;
     assert(config, "The `manual` resolution mode needs a `resolutionConfig` option");
 
     if (config[route.url]) {
-        const controller = createController(config[route.url], options);
+        const controller = await createController(config[route.url], options);
         return controller[route.operationId];
     }
 
     const keys = Object.keys(config);
     for (const key of keys) {
         if (route.url.startsWith(key)) {
-            const controller = createController(config[route.url], options);
+            const controller = await createController(config[key], options);
             return controller[route.operationId];
         }
         if (new RegExp(key).test(route.url)) {
-            const controller = createController(config[route.url], options);
+            const controller = await createController(config[key], options);
             return controller[route.operationId];
         }
     }
 
     if (config.default) {
-        const controller = createController(config.default, options);
+        const controller = await createController(config.default, options);
         return controller[route.operationId];
     }
 }
 
-function createControllerUniqueHandler(route: ParsedRoute, options: ControllerOptions): RequestHandler | void {
+async function createControllerUniqueHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
     const controller = options.controller;
     assert(controller, "The `unique` resolution mode needs a `controller` option");
 
-    const built = createController(controller, options);
+    const built = await createController(controller, options);
     return built[route.operationId];
 }
 
-function createControllerPerOperationHandler(route: ParsedRoute, options: ControllerOptions): RequestHandler | void {
+async function createControllerPerOperationHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
     assert(options.controllersDir, "The `per-operation` resolution mode needs a `controllersDir` option");
 
     const xController = route.openapiSource["x-controller"];
     if (xController) {
-        const controller = createController(xController, options);
+        const controller = await createController(xController, options);
         return controller[route.operationId];
     }
 }
 
-function createControllerPerRouteHandler(route: ParsedRoute, options: ControllerOptions): RequestHandler | void {
+async function createControllerPerRouteHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
     assert(options.controllersDir, "The `per-route` resolution mode needs a `controllersDir` option");
 
     let [scope] = route.url.replace(/^\//, "").split("/");
@@ -122,7 +122,7 @@ function createControllerPerRouteHandler(route: ParsedRoute, options: Controller
         scope = "root";
     }
 
-    const controller = createController(`${scope}.controller`, options);
+    const controller = await createController(`${scope}.controller`, options);
     return controller[route.operationId];
 }
 
@@ -168,6 +168,16 @@ function importController(name: string, options: ControllerOptions): Controller 
     catch {
         throw new Error(`Unable to locate controller "${name}"`);
     }
+}
+
+function resolvePromise<T>(cfg: () => T | Promise<T>): Promise<T> {
+    const val = cfg();
+    if (isPromise(val)) return val;
+    return Promise.resolve(val);
+}
+
+function isPromise(obj: any): obj is Promise<any> {
+    return !!obj && typeof obj.then === "function";
 }
 
 function isControllerConstructor(obj: any): obj is ControllerConstructor {

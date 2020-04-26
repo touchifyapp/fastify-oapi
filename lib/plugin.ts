@@ -3,7 +3,7 @@ import * as ajvOpenApi from "ajv-openapi";
 import type { FastifyInstance, RouteOptions, ServerOptions } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
-import parse, { ParsedRoute } from "./parser";
+import parse from "./parser";
 import { ControllerOptions, createHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
@@ -30,15 +30,15 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
             instance.addSchema(config.shared);
         }
 
-        config.routes.forEach((route: ParsedRoute) => {
+        for (const route of config.routes) {
             if (route.schema.response) {
                 stripResponseFormats(route.schema.response);
             }
 
-            route.handler = createHandler(route, options);
+            route.handler = await createHandler(route, options);
 
             instance.route(route as RouteOptions);
-        });
+        }
     }
 }
 
