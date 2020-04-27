@@ -1,6 +1,6 @@
 import * as ajvOpenApi from "ajv-openapi";
 
-import type { FastifyInstance, RouteOptions, ServerOptions } from "fastify";
+import type { FastifyInstance, ServerOptions } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
 import parse from "./parser";
@@ -35,9 +35,11 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
                 stripResponseFormats(route.schema.response);
             }
 
-            route.handler = await createHandler(route, options);
-
-            instance.route(route as RouteOptions);
+            instance.route({
+                ...route,
+                handler: await createHandler(route, options),
+                config: route.openapiSource
+            });
         }
     }
 }

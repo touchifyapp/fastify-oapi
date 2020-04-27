@@ -1,4 +1,4 @@
-import { RouteSchema, RequestHandler } from "fastify";
+import { RouteSchema, RequestHandler, HTTPMethod } from "fastify";
 
 import * as $RefParser from "@apidevtools/json-schema-ref-parser";
 
@@ -32,7 +32,7 @@ export interface ParsedConfig {
 }
 
 export interface ParsedRoute {
-    method: string;
+    method: HTTPMethod;
     url: string;
     schema: RouteSchema;
     operationId: string;
@@ -112,8 +112,8 @@ function processOperation(config: ParsedConfig, path: string, method: string, op
         return;
     }
 
-    const route = {
-        method: method.toUpperCase(),
+    const route: ParsedRoute = {
+        method: method.toUpperCase() as HTTPMethod,
         url: makeURL(path),
         schema: parseOperationSchema(config, genericSchema, operation),
         operationId: operation.operationId || makeOperationId(method, path),
