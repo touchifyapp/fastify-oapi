@@ -38,7 +38,9 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
             instance.route({
                 ...route,
                 handler: await createHandler(route, options),
-                config: route.openapiSource
+                config: {
+                    oapi: route.openapiSource
+                }
             });
         }
     }
