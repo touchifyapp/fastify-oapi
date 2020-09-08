@@ -28,7 +28,7 @@ describe("Config", () => {
         });
 
         await expect(fastify.ready())
-            .resolves.toBe(fastify);
+            .resolves.toBeUndefined();
     });
 
     test("should block app startup on invalid Open API v3 specification throws error ", async () => {
@@ -63,7 +63,7 @@ describe("Config", () => {
         });
 
         await expect(fastify.ready())
-            .resolves.toBe(fastify);
+            .resolves.toBeUndefined();
     });
 
     test("should load V3.0.1 definition with no error", async () => {
@@ -76,6 +76,6 @@ describe("Config", () => {
         });
 
         await expect(fastify.ready())
-            .resolves.toBe(fastify);
+            .resolves.toBeUndefined();
     });
 });
