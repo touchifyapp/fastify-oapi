@@ -165,8 +165,8 @@ function importController(name: string, options: ControllerOptions): Controller 
 
         return require(name);
     }
-    catch {
-        throw new Error(`Unable to locate controller "${name}"`);
+    catch (err) {
+        throw new Error(`Error while importing controller "${name}": ${err.message}`);
     }
 }
 
