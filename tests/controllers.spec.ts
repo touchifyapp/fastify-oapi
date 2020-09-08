@@ -148,7 +148,7 @@ describe("Controller Resolution", () => {
                 await expect(fastify.ready())
                     .rejects.toHaveProperty(
                         "message",
-                        `Unable to locate controller "path/to/undefined"`
+                        `Error while importing controller \"path/to/undefined\": Cannot find module 'path/to/undefined' from 'resolution.ts'`
                     );
             });
 
