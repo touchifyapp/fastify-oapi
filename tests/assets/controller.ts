@@ -69,6 +69,34 @@ export async function getHeaderParam(req: FastifyRequest): Promise<string> {
     return "";
 }
 
+// Operation: getPathWildcardParam
+// summary:  Test path wildcard parameters
+// route.wildcard: pathName
+// route.params:
+//   type: object
+//   properties:
+//     *:
+//       type: string
+//   required:
+//     - *
+//
+// valid responses:
+//   '200':
+//     description: ok
+//
+
+export async function getPathWildcardParam(req: FastifyRequest): Promise<string> {
+    if (typeof req.params.pathName !== "string") {
+        throw new Error("req.params.pathName is not a string");
+    }
+
+    if (req.params.pathName !== req.params["*"]) {
+        throw new Error("req.params.pathName is not equal to req.params.*");
+    }
+
+    return "";
+}
+
 // Operation: getAuthHeaderParam
 // summary:  Test authorization header parameters
 // req.headers:

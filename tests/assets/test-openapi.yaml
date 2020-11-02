@@ -6,7 +6,7 @@ info:
   description: testing the fastify openapi glue
   version: 0.1.0
 paths:
-  "/pathParam/{id}":
+  /pathParam/{id}:
     get:
       operationId: getPathParam
       summary: Test path parameters
@@ -60,7 +60,23 @@ paths:
             schema:
               $ref: "#/components/schemas/bodyObject"
         required: true
-  "/noOperationId/{id}":
+        
+  /pathWildcard/{pathName}:
+    get:
+      operationId: getPathWildcardParam
+      summary: Test path wildcard parameters
+      parameters:
+        - name: pathName
+          in: path
+          required: true
+          x-wildcard: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ok
+
+  /noOperationId/{id}:
     get:
       summary: Test missing operationid
       parameters:

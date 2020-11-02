@@ -130,7 +130,25 @@
                     }
                 }
             }
-        },
+        },  
+        "/pathWildcard/{pathName}": {
+          "get": {
+            "operationId": "getPathWildcardParam",
+            "summary": "Test path wildcard parameters",
+            "parameters": [{
+              "name": "pathName",
+                "in": "path",
+                "required": true,
+                "x-wildcard": true,
+                "schema": { "type": "string" }
+            }],
+            "responses": {
+              "200": {
+                "description": "ok"
+              }
+            }
+          }
+        },      
         "/noOperationId/{id}": {
             "get": {
                 "summary": "Test missing operationid",

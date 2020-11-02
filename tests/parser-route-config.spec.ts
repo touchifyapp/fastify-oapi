@@ -48,6 +48,17 @@ describe("Parser", () => {
             expect(res).toHaveProperty("statusCode", 200);
         });
 
+        test("should configure path wildcard parameters schema", async () => {
+            const fastify = createFastify(options);
+
+            const res = await fastify.inject({
+                method: "GET",
+                url: "/pathWildcard/test/sub/path"
+            });
+
+            expect(res).toHaveProperty("statusCode", 200);
+        });
+
         test("should validate missing header parameters and return error 500", async () => {
             const fastify = createFastify(options);
 
