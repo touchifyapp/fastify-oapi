@@ -37,6 +37,7 @@ export interface ParsedRoute {
     schema: RouteSchema;
     operationId: string;
     openapiSource: OperationObject;
+    wildcard?: string;
     handler?: RequestHandler;
 }
 
@@ -100,21 +101,21 @@ function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject
         Object.keys(pathItem).forEach(verb => {
             const operation = pathItem[verb];
             if (isHttpVerb(verb) && operation) {
-                processOperation(config, path, verb, operation, genericSchema);
+                processOperation(config, path, verb, operation, pathItem, genericSchema);
             }
         });
     }
 }
 
 /** Build fastify RouteSchema and add it to routes. */
-function processOperation(config: ParsedConfig, path: string, method: string, operation: OperationObject, genericSchema: RouteSchema): void {
+function processOperation(config: ParsedConfig, path: string, method: string, operation: OperationObject, pathItem: PathItemObject, genericSchema: RouteSchema): void {
     if (!operation) {
         return;
     }
 
     const route: ParsedRoute = {
         method: method.toUpperCase() as HTTPMethod,
-        url: makeURL(path),
+        ...makeURL(path, pathItem, operation, config),
         schema: parseOperationSchema(config, genericSchema, operation),
         operationId: operation.operationId || makeOperationId(method, path),
         openapiSource: operation
@@ -188,16 +189,21 @@ function parseParams(base: SchemaObject | undefined, parameters: ParameterObject
     const baseRequired = new Set(base?.required ?? []);
 
     parameters.forEach(item => {
-        properties[item.name] = parseSchema(item.schema);
+        let itemName = item.name;
+        if (item["x-wildcard"] === true) {
+            itemName = "*";
+        }
 
-        copyProps(item, properties[item.name], ["description"]);
+        properties[itemName] = parseSchema(item.schema);
 
-        if (baseRequired.has(item.name)) {
-            baseRequired.delete(item.name);
+        copyProps(item, properties[itemName], ["description"]);
+
+        if (baseRequired.has(itemName)) {
+            baseRequired.delete(itemName);
         }
 
         if (item.required) {
-            required.push(item.name);
+            required.push(itemName);
         }
     });
 
@@ -312,8 +318,20 @@ function isReference(obj: any): obj is ReferenceObject {
 }
 
 /** Adjust URLs from OpenAPI to fastify. (openapi: 'path/{param}' => fastify: 'path/:param'). */
-function makeURL(path: string): string {
-    return path.replace(/{(\w+)}/g, ":$1");
+function makeURL(path: string, pathItem: PathItemObject, operation: OperationObject, config: ParsedConfig): { url: string; wildcard?: string } {
+    let wildcard: string | undefined;
+
+    const url = path.replace(/{(\w+)}/g, (_, paramName) => {
+        const param = findParameter(paramName, pathItem, operation, config);
+        if (param?.["x-wildcard"] === true) {
+            wildcard = paramName;
+            return "*";
+        }
+
+        return `:${paramName}`;
+    });
+
+    return { url, wildcard };
 }
 
 /** Copy the given list of properties from source to target. */
@@ -331,6 +349,17 @@ function firstUpper(str: string): string {
 
 function isHttpVerb(str: string): str is ("get" | "put" | "post" | "delete" | "options" | "head" | "trace") {
     return HttpOperations.has(str);
+}
+
+function findParameter(paramName: string, pathItem: PathItemObject, operation: OperationObject, config: ParsedConfig): ParameterObject | undefined {
+    const parameters = [
+        ...pathItem.parameters || [],
+        ...operation.parameters || [],
+    ]
+
+    return parameters
+        .map(p => resolveReference(p, config))
+        .find(p => p.in === "path" && p.name === paramName);
 }
 
 //#endregion

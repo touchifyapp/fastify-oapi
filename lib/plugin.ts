@@ -1,9 +1,9 @@
 import * as ajvOpenApi from "ajv-openapi";
 
-import type { FastifyInstance, ServerOptions } from "fastify";
+import type { FastifyInstance, ServerOptions, RequestHandler } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
-import parse from "./parser";
+import parse, { ParsedRoute } from "./parser";
 import { ControllerOptions, createHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
@@ -35,9 +35,11 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
                 stripResponseFormats(route.schema.response);
             }
 
+            const controllerHandler = await createHandler(route, options);
+
             instance.route({
                 ...route,
-                handler: await createHandler(route, options),
+                handler: createWrappedHandler(route, controllerHandler),
                 config: {
                     oapi: route.openapiSource
                 }
@@ -56,6 +58,20 @@ export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], u
             [ajvOpenApi, { useDraft04 }],
             ...(plugins as any[] || [])
         ]
+    };
+}
+
+function createWrappedHandler(route: ParsedRoute, controllerHandler: RequestHandler): RequestHandler {
+    if (!route.wildcard) {
+        return controllerHandler;
+    }
+
+    const wildcard = route.wildcard;
+
+    return function (req, reply) {
+        req.params[wildcard] = req.params["*"];
+
+        return controllerHandler.call(this, req, reply);
     };
 }
 
