@@ -1,9 +1,9 @@
 # fastify-oapi
 
-[![License](http://img.shields.io/badge/license-MIT-green.svg)](http://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](http://opensource.org/licenses/MIT)
 [![NPM version](https://img.shields.io/npm/v/fastify-oapi.svg?style=flat-square)](https://npmjs.org/package/fastify-oapi)
 [![NPM download](https://img.shields.io/npm/dm/fastify-oapi.svg?style=flat-square)](https://npmjs.org/package/fastify-oapi)
-[![Build Status](https://travis-ci.org/touchifyapp/fastify-oapi.svg?branch=master)](https://travis-ci.org/touchifyapp/fastify-oapi)
+[![Run Tests](https://github.com/touchifyapp/fastify-oapi/workflows/Run%20Tests/badge.svg)](https://github.com/touchifyapp/fastify-oapi/actions?query=workflow%3A%22Run+Tests%22)
 [![Test Coverage](https://coveralls.io/repos/github/touchifyapp/fastify-oapi/badge.svg)](https://coveralls.io/github/touchifyapp/fastify-oapi)
 [![Dependency Status](https://img.shields.io/david/touchifyapp/fastify-oapi.svg)](https://david-dm.org/touchifyapp/fastify-oapi)
 
