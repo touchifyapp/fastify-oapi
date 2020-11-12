@@ -6,6 +6,7 @@
 [![Unit Tests](https://github.com/touchifyapp/fastify-oapi/workflows/Unit%20Tests/badge.svg)](https://github.com/touchifyapp/fastify-oapi/actions?query=workflow%3A%22Unit+Tests%22)
 [![Test Coverage](https://coveralls.io/repos/github/touchifyapp/fastify-oapi/badge.svg)](https://coveralls.io/github/touchifyapp/fastify-oapi)
 [![Dependency Status](https://img.shields.io/david/touchifyapp/fastify-oapi.svg)](https://david-dm.org/touchifyapp/fastify-oapi)
+[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
 ## Installation
 
