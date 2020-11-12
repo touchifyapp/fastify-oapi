@@ -1,6 +1,6 @@
 import * as ajvOpenApi from "ajv-openapi";
 
-import type { FastifyInstance, ServerOptions, RequestHandler } from "fastify";
+import type { FastifyInstance, FastifyServerOptions, RouteHandler } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
 import parse, { ParsedRoute } from "./parser";
@@ -32,7 +32,7 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
 
         for (const route of config.routes) {
             if (route.schema.response) {
-                stripResponseFormats(route.schema.response);
+                stripResponseFormats(route.schema.response as Record<string, any>);
             }
 
             const controllerHandler = await createHandler(route, options);
@@ -51,7 +51,7 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
 export type AjvPlugin = (ajv: Ajv) => Ajv;
 export type AjvPluginInit = AjvPlugin | [AjvPlugin] | [AjvPlugin, any];
 
-export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], useDraft04?: boolean): NonNullable<ServerOptions["ajv"]> {
+export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], useDraft04?: boolean): NonNullable<FastifyServerOptions["ajv"]> {
     return {
         customOptions: ajvOpenApi.createOptions(options),
         plugins: [
@@ -61,7 +61,7 @@ export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], u
     };
 }
 
-function createWrappedHandler(route: ParsedRoute, controllerHandler: RequestHandler): RequestHandler {
+function createWrappedHandler(route: ParsedRoute, controllerHandler: RouteHandler): RouteHandler {
     if (!route.wildcard) {
         return controllerHandler;
     }
@@ -69,7 +69,7 @@ function createWrappedHandler(route: ParsedRoute, controllerHandler: RequestHand
     const wildcard = route.wildcard;
 
     return function (req, reply) {
-        req.params[wildcard] = req.params["*"];
+        (req.params as any)[wildcard] = (req.params as any)["*"];
 
         return controllerHandler.call(this, req, reply);
     };

@@ -1,4 +1,4 @@
-import * as fp from "fastify-plugin";
+import fp from "fastify-plugin";
 import { plugin } from "./lib/plugin";
 
 export * from "./lib/plugin";

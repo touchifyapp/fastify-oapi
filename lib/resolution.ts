@@ -1,10 +1,10 @@
 import * as path from "path";
 import { ok } from "assert";
 
-import { RequestHandler } from "fastify";
+import { RouteHandler } from "fastify";
 import { ParsedRoute } from "./parser";
 
-export type Controller = Record<string, RequestHandler>;
+export type Controller = Record<string, RouteHandler>;
 export type ControllerConstructor = { new(): Controller };
 export type ControllerFactory = () => Controller | Promise<Controller>;
 
@@ -18,7 +18,7 @@ export interface ControllerOptions {
     resolutionConfig?: Record<string, ControllerConfig>;
 }
 
-export async function createHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler> {
+export async function createHandler(route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler> {
     const resolutions = getDefaultResolution(options);
     if (!Array.isArray(resolutions)) {
         return await createControllerHandler(resolutions, route, options) ||
@@ -56,7 +56,7 @@ export async function createController(config: ControllerConfig, options: Contro
     throw new Error("The controller should be an `object`, a `function` or a `constructor`");
 }
 
-async function createControllerHandler(resolution: ControllerResolution, route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
+async function createControllerHandler(resolution: ControllerResolution, route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler | void> {
     switch (resolution) {
         case "manual":
             return createControllerManualHandler(route, options);
@@ -69,7 +69,7 @@ async function createControllerHandler(resolution: ControllerResolution, route: 
     }
 }
 
-async function createControllerManualHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
+async function createControllerManualHandler(route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler | void> {
     const config = options.resolutionConfig;
     assert(config, "The `manual` resolution mode needs a `resolutionConfig` option");
 
@@ -96,7 +96,7 @@ async function createControllerManualHandler(route: ParsedRoute, options: Contro
     }
 }
 
-async function createControllerUniqueHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
+async function createControllerUniqueHandler(route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler | void> {
     const controller = options.controller;
     assert(controller, "The `unique` resolution mode needs a `controller` option");
 
@@ -104,7 +104,7 @@ async function createControllerUniqueHandler(route: ParsedRoute, options: Contro
     return built[route.operationId];
 }
 
-async function createControllerPerOperationHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
+async function createControllerPerOperationHandler(route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler | void> {
     assert(options.controllersDir, "The `per-operation` resolution mode needs a `controllersDir` option");
 
     const xController = route.openapiSource["x-controller"];
@@ -114,7 +114,7 @@ async function createControllerPerOperationHandler(route: ParsedRoute, options: 
     }
 }
 
-async function createControllerPerRouteHandler(route: ParsedRoute, options: ControllerOptions): Promise<RequestHandler | void> {
+async function createControllerPerRouteHandler(route: ParsedRoute, options: ControllerOptions): Promise<RouteHandler | void> {
     assert(options.controllersDir, "The `per-route` resolution mode needs a `controllersDir` option");
 
     let [scope] = route.url.replace(/^\//, "").split("/");
@@ -126,7 +126,7 @@ async function createControllerPerRouteHandler(route: ParsedRoute, options: Cont
     return controller[route.operationId];
 }
 
-function createControllerDefaultHandler(route: ParsedRoute): RequestHandler {
+function createControllerDefaultHandler(route: ParsedRoute): RouteHandler {
     return async (_, reply) => {
         reply.status(501);
         throw new Error(`Operation ${route.operationId} not implemented!`);

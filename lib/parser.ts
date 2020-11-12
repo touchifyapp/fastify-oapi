@@ -1,4 +1,4 @@
-import { RouteSchema, RequestHandler, HTTPMethod } from "fastify";
+import { FastifySchema, RouteHandler, HTTPMethods } from "fastify";
 
 import * as $RefParser from "@apidevtools/json-schema-ref-parser";
 
@@ -32,13 +32,13 @@ export interface ParsedConfig {
 }
 
 export interface ParsedRoute {
-    method: HTTPMethod;
+    method: HTTPMethods;
     url: string;
-    schema: RouteSchema;
+    schema: FastifySchema;
     operationId: string;
     openapiSource: OperationObject;
     wildcard?: string;
-    handler?: RequestHandler;
+    handler?: RouteHandler;
 }
 
 export default async function parse(specOrPath: string | OpenAPIObject): Promise<ParsedConfig> {
@@ -108,13 +108,13 @@ function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject
 }
 
 /** Build fastify RouteSchema and add it to routes. */
-function processOperation(config: ParsedConfig, path: string, method: string, operation: OperationObject, pathItem: PathItemObject, genericSchema: RouteSchema): void {
+function processOperation(config: ParsedConfig, path: string, method: string, operation: OperationObject, pathItem: PathItemObject, genericSchema: FastifySchema): void {
     if (!operation) {
         return;
     }
 
     const route: ParsedRoute = {
-        method: method.toUpperCase() as HTTPMethod,
+        method: method.toUpperCase() as HTTPMethods,
         ...makeURL(path, pathItem, operation, config),
         schema: parseOperationSchema(config, genericSchema, operation),
         operationId: operation.operationId || makeOperationId(method, path),
@@ -125,7 +125,7 @@ function processOperation(config: ParsedConfig, path: string, method: string, op
 }
 
 /** Build fastify RouteSchema based on OpenAPI Operation */
-function parseOperationSchema(config: ParsedConfig, genericSchema: RouteSchema, operation: OperationObject): RouteSchema {
+function parseOperationSchema(config: ParsedConfig, genericSchema: FastifySchema, operation: OperationObject): FastifySchema {
     const schema = Object.assign({}, genericSchema);
 
     copyProps(operation, schema, ["tags", "summary", "description", "operationId"]);
@@ -147,8 +147,8 @@ function parseOperationSchema(config: ParsedConfig, genericSchema: RouteSchema, 
     return schema;
 }
 
-/** Parse Open API params for Query/Params/Headers and include them into RouteSchema. */
-function parseParameters(config: ParsedConfig, schema: RouteSchema, parameters: Array<ParameterObject | ReferenceObject>): void {
+/** Parse Open API params for Query/Params/Headers and include them into FastifySchema. */
+function parseParameters(config: ParsedConfig, schema: FastifySchema, parameters: Array<ParameterObject | ReferenceObject>): void {
     const params: ParameterObject[] = [];
     const querystring: ParameterObject[] = [];
     const headers: ParameterObject[] = [];
@@ -169,15 +169,15 @@ function parseParameters(config: ParsedConfig, schema: RouteSchema, parameters: 
     });
 
     if (params.length > 0) {
-        schema.params = parseParams(schema.params, params);
+        schema.params = parseParams(schema.params as SchemaObject, params);
     }
 
     if (querystring.length > 0) {
-        schema.querystring = parseParams(schema.querystring, querystring);
+        schema.querystring = parseParams(schema.querystring as SchemaObject, querystring);
     }
 
     if (headers.length > 0) {
-        schema.headers = parseParams(schema.headers, headers);
+        schema.headers = parseParams(schema.headers as SchemaObject, headers);
     }
 }
 

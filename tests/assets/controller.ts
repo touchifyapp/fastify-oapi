@@ -15,7 +15,7 @@ import { FastifyRequest } from "fastify";
 //     description: ok
 //
 
-export async function getPathParam(req: FastifyRequest): Promise<string> {
+export async function getPathParam(req: FastifyRequest<{ Params: { id: number } }>): Promise<string> {
     if (typeof req.params.id !== "number") {
         throw new Error("req.params.id is not a number");
     }
@@ -38,7 +38,7 @@ export async function getPathParam(req: FastifyRequest): Promise<string> {
 //     description: ok
 //
 
-export async function getQueryParam(req: FastifyRequest): Promise<string> {
+export async function getQueryParam(req: FastifyRequest<{ Querystring: { int1: number; int2: number } }>): Promise<string> {
     if (
         typeof req.query.int1 !== "number" ||
         typeof req.query.int2 !== "number"
@@ -85,7 +85,7 @@ export async function getHeaderParam(req: FastifyRequest): Promise<string> {
 //     description: ok
 //
 
-export async function getPathWildcardParam(req: FastifyRequest): Promise<string> {
+export async function getPathWildcardParam(req: FastifyRequest<{ Params: { pathName: string; "*": string } }>): Promise<string> {
     if (typeof req.params.pathName !== "string") {
         throw new Error("req.params.pathName is not a string");
     }
@@ -139,7 +139,7 @@ export async function getNoParam(req: FastifyRequest): Promise<string> {
 //     description: ok
 //
 
-export async function postBodyParam(req: FastifyRequest): Promise<string> {
+export async function postBodyParam(req: FastifyRequest<{ Body: { str1: string } }>): Promise<string> {
     if (typeof req.body.str1 !== "string") {
         throw new Error("req.body.str1 is not a string");
     }
@@ -166,7 +166,7 @@ export async function postBodyParam(req: FastifyRequest): Promise<string> {
 //         - response
 //
 
-export async function getResponse(req: FastifyRequest): Promise<object> {
+export async function getResponse(req: FastifyRequest<{ Querystring: { replyType: string } }>): Promise<object> {
     if (req.query.replyType === "valid") {
         return { response: "test data" };
     } else {

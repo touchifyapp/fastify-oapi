@@ -1,14 +1,13 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { ServerResponse } from "http";
 
-export async function getInventory(req: FastifyRequest, reply: FastifyReply<ServerResponse>): Promise<void> {
+export async function getInventory(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     reply.send({
         1: 100,
         2: 50
     });
 }
 
-export async function placeOrder(req: FastifyRequest, reply: FastifyReply<ServerResponse>): Promise<void> {
+export async function placeOrder(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     reply.send({
         id: 1,
         petId: 1,
@@ -19,7 +18,7 @@ export async function placeOrder(req: FastifyRequest, reply: FastifyReply<Server
     });
 }
 
-export async function getOrderById(req: FastifyRequest, reply: FastifyReply<ServerResponse>): Promise<void> {
+export async function getOrderById(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     reply.send({
         id: 1,
         petId: 1,
@@ -30,12 +29,12 @@ export async function getOrderById(req: FastifyRequest, reply: FastifyReply<Serv
     });
 }
 
-export async function deleteOrder(req: FastifyRequest, reply: FastifyReply<ServerResponse>): Promise<void> {
+export async function deleteOrder(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     reply.status(200);
     reply.send();
 }
 
-export async function getPetById(req: FastifyRequest, reply: FastifyReply<ServerResponse>): Promise<void> {
+export async function getPetById(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply): Promise<void> {
     reply.send({
         id: req.params.id,
         name: "cat",
