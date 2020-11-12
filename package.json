@@ -32,7 +32,7 @@
     "prepublishOnly": "npm test && npm run build"
   },
   "dependencies": {
-    "@apidevtools/json-schema-ref-parser": "^8.0.0",
+    "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "ajv-openapi": "^2.0.0",
     "fastify-plugin": "^3.0.0"
   },
