@@ -26,10 +26,7 @@
     "lint": "npm run lint:ts",
     "lint:ts": "eslint --ext .ts *.ts lib/**/*.ts",
     "clean": "npm run clean:ts",
-    "clean:ts": "rimraf *.{js,d.ts} lib/**/*.{js,d.ts}",
-    "preversion": "npm run lint",
-    "postversion": "git push && git push --tags",
-    "prepublishOnly": "npm test && npm run build"
+    "clean:ts": "rimraf *.{js,d.ts} lib/**/*.{js,d.ts}"
   },
   "dependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
