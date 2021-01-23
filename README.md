@@ -164,6 +164,40 @@ If the `resolution` option is not provided, the engine will try to look for opti
 2. If `resolutionConfig` is defined, use the `manual` resolution mode.
 3. If `controllersDir` is defined, use the `per-route` resolution mode.
 
+## OpenAPI extensions
+
+#### x-partial
+
+`fastify-oapi` supports the `x-partial` Open API extension which allows to override `required` configuration of JSON Schemas. It is useful to easily allow some operations to returns partial entities while keeping shared schemas intact.
+
+Examples:
+```yaml
+/partial:
+  get:
+    operationId: getPartial
+    summary: x-partial response
+    responses:
+      "200":
+        description: partial
+        content:
+          application/json:
+            schema:
+              x-partial: true
+              type: object
+              properties:
+                response:
+                type: string
+              required:
+                - response
+      "201":
+        description: partial $ref
+        content:
+          application/json:
+            schema:
+              x-partial: true
+              $ref: "#/components/schemas/ResponseObject"
+```
+
 ## License
 
 This project is under MIT License. See the [LICENSE](LICENSE) file for the full license text.
