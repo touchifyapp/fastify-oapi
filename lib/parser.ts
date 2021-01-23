@@ -265,6 +265,20 @@ function parseSchemaItems(item: any): any {
     }
 
     if (typeof item === "object") {
+        const {
+            "x-partial": xPartial,
+            ...schema
+        } = item;
+
+        if (xPartial) {
+            item = {
+                allOf: [
+                    { required: [] },
+                    schema
+                ]
+            };
+        }
+
         if (isReference(item)) {
             return { $ref: "urn:schema:api" + item.$ref }; //item.$ref.replace("#/components/schemas", "urn:schema:api#/definitions") };
         }
