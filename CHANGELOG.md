@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/touchifyapp/fastify-oapi/compare/v1.4.0...v1.5.0) (2021-01-23)
+
+
+### Features
+
+* **parser:** add x-partial to allow to override required from schemas ([f44accb](https://github.com/touchifyapp/fastify-oapi/commit/f44accb98e6fdcf1ff26eecb7a098e550c625357))
+
 # [1.4.0](https://github.com/touchifyapp/fastify-oapi/compare/v1.3.0...v1.4.0) (2020-11-12)
 
 
