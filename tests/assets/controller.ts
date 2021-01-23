@@ -1,4 +1,4 @@
-import { FastifyRequest } from "fastify";
+import { FastifyReply, FastifyRequest } from "fastify";
 
 // Operation: getPathParam
 // summary:  Test path parameters
@@ -172,6 +172,40 @@ export async function getResponse(req: FastifyRequest<{ Querystring: { replyType
     } else {
         return { invalid: 1 };
     }
+}
+
+// Operation: getPartialResponse
+// summary: Test response x-partial override
+// req.query:
+//   type: object
+//   properties:
+//     status:
+//       type: number
+//
+// valid responses:
+//   '200':
+//     description: ok
+//     schema:
+//       type: object
+//       properties:
+//         response:
+//           type: string
+//       required:
+//         - response
+//   '201':
+//     description: partial
+//     schema:
+//       x-partial: true
+//       type: object
+//       properties:
+//         response:
+//           type: string
+//       required:
+//         - response
+
+export async function getPartialResponse(req: FastifyRequest<{ Querystring: { status?: number; } }>, reply: FastifyReply): Promise<object> {
+    reply.status(req.query.status || 200);
+    return {};
 }
 
 // Operation: getMergeParam

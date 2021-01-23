@@ -1,0 +1,53 @@
+openapi: 3.0.0
+servers:
+  - url: "http://localhost/v2"
+info:
+  title: Test specification
+  description: testing the fastify openapi glue
+  version: 0.1.0
+paths:
+  /responses/partials:
+    get:
+      operationId: getPartialResponse
+      summary: Test response x-partial override
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: number
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/responseObject"
+        "201":
+          description: partial
+          content:
+            application/json:
+              schema:
+                x-partial: true
+                $ref: "#/components/schemas/responseObject"
+        "202":
+          description: partial
+          content:
+            application/json:
+              schema:
+                x-partial: true
+                type: object
+                properties:
+                  response:
+                    type: string
+                required:
+                  - response
+
+components:
+  schemas:
+    responseObject:
+      type: object
+      properties:
+        response:
+          type: string
+      required:
+        - response
