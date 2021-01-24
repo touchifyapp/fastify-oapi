@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.0...v1.5.1) (2021-01-24)
+
+
+### Bug Fixes
+
+* **x-partial:** ensure additional props are not sent ([c07338c](https://github.com/touchifyapp/fastify-oapi/commit/c07338cd43d36223e58f687023b1283ec7223369))
+
 # [1.5.0](https://github.com/touchifyapp/fastify-oapi/compare/v1.4.0...v1.5.0) (2021-01-23)
 
 
