@@ -205,7 +205,7 @@ export async function getResponse(req: FastifyRequest<{ Querystring: { replyType
 
 export async function getPartialResponse(req: FastifyRequest<{ Querystring: { status?: number; } }>, reply: FastifyReply): Promise<object> {
     reply.status(req.query.status || 200);
-    return {};
+    return { invalid: true };
 }
 
 // Operation: getMergeParam

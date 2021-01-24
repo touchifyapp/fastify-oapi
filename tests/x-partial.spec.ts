@@ -29,6 +29,7 @@ describe("x-partial", () => {
         });
 
         expect(res).toHaveProperty("statusCode", 201);
+        expect(res.json()).toEqual({});
     });
 
     test("should apply partial override if x-partial is provided (with object)", async () => {
@@ -40,6 +41,7 @@ describe("x-partial", () => {
         });
 
         expect(res).toHaveProperty("statusCode", 202);
+        expect(res.json()).toEqual({});
     });
 
 });

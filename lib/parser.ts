@@ -13,6 +13,8 @@ import {
     ReferenceObject
 } from "openapi3-ts";
 
+import { omit } from "./util";
+
 const HttpOperations = new Set([
     "delete",
     "get",
@@ -48,9 +50,10 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
         throw new Error("The 'specification' parameter must contain a valid version 3.0.x specification");
     }
 
+    const $refs = await $RefParser.resolve(spec);
     const config: ParsedConfig = {
-        $refs: await $RefParser.resolve(spec),
-        shared: createSharedSchema(spec),
+        $refs,
+        shared: createSharedSchema(spec, $refs),
         generic: {} as any,
         routes: [],
     };
@@ -70,16 +73,16 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
 
 //#region Parser
 
-function createSharedSchema(spec: OpenAPIObject): SchemaObject | undefined {
+function createSharedSchema(spec: OpenAPIObject, $refs: $RefParser.$Refs): SchemaObject | undefined {
     if (!spec.definitions && !spec.components?.schemas) {
         return;
     }
 
     return {
         $id: "urn:schema:api",
-        definitions: parseSchemaItems(spec.definitions),
+        definitions: parseSchemaItems(spec.definitions, { $refs }),
         components: {
-            schemas: parseSchemaItems(spec.components?.schemas)
+            schemas: parseSchemaItems(spec.components?.schemas, { $refs })
         }
     };
 }
@@ -169,20 +172,20 @@ function parseParameters(config: ParsedConfig, schema: FastifySchema, parameters
     });
 
     if (params.length > 0) {
-        schema.params = parseParams(schema.params as SchemaObject, params);
+        schema.params = parseParams(config, schema.params as SchemaObject, params);
     }
 
     if (querystring.length > 0) {
-        schema.querystring = parseParams(schema.querystring as SchemaObject, querystring);
+        schema.querystring = parseParams(config, schema.querystring as SchemaObject, querystring);
     }
 
     if (headers.length > 0) {
-        schema.headers = parseParams(schema.headers as SchemaObject, headers);
+        schema.headers = parseParams(config, schema.headers as SchemaObject, headers);
     }
 }
 
 /** Parse Open API params for Query/Params/Headers. */
-function parseParams(base: SchemaObject | undefined, parameters: ParameterObject[]): SchemaObject {
+function parseParams(config: ParsedConfig, base: SchemaObject | undefined, parameters: ParameterObject[]): SchemaObject {
     const properties: Record<string, SchemaObject | ReferenceObject> = {};
 
     const required: string[] = [];
@@ -194,7 +197,7 @@ function parseParams(base: SchemaObject | undefined, parameters: ParameterObject
             itemName = "*";
         }
 
-        properties[itemName] = parseSchema(item.schema);
+        properties[itemName] = parseSchema(item.schema, config);
 
         copyProps(item, properties[itemName], ["description"]);
 
@@ -245,38 +248,42 @@ function parseBody(config: ParsedConfig, body?: RequestBodyObject | ResponseObje
     body = resolveReference(body, config);
 
     if (body?.content?.["application/json"]) {
-        return parseSchema(body.content["application/json"].schema);
+        return parseSchema(body.content["application/json"].schema, config);
     }
 }
 
 /** Parse a schema and inject shared reference if needed. */
-function parseSchema(schema: SchemaObject | ReferenceObject | undefined): SchemaObject | ReferenceObject {
+function parseSchema(schema: SchemaObject | ReferenceObject | undefined, config: { $refs: $RefParser.$Refs }): SchemaObject | ReferenceObject {
     if (!schema) return {};
-    return parseSchemaItems(schema);
+    return parseSchemaItems(schema, config);
 }
 
-function parseSchemaItems(item: any): any {
+function parseSchemaItems(item: any, config: { $refs: $RefParser.$Refs }): any {
     if (!item) {
         return item;
     }
 
     if (Array.isArray(item)) {
-        return item.map(parseSchemaItems);
+        return item.map(c => parseSchemaItems(c, config));
     }
 
     if (typeof item === "object") {
         const {
             "x-partial": xPartial,
-            ...schema
+            ...itemSchema
         } = item;
 
         if (xPartial) {
-            item = {
-                allOf: [
-                    { required: [] },
-                    schema
-                ]
-            };
+            const schema = isReference(itemSchema) ?
+                resolveReference(itemSchema, config) :
+                itemSchema;
+
+            if (schema.required) {
+                item = omit(schema, ["required"]);
+            }
+            else {
+                item = itemSchema;
+            }
         }
 
         if (isReference(item)) {
@@ -285,7 +292,7 @@ function parseSchemaItems(item: any): any {
 
         const res: any = {};
         for (const key in item) {
-            res[key] = parseSchemaItems(item[key]);
+            res[key] = parseSchemaItems(item[key], config);
         }
 
         return res;
@@ -318,12 +325,12 @@ async function bundleSpecification(spec: string | OpenAPIObject): Promise<OpenAP
 }
 
 /** Resolves external reference */
-function resolveReference<T>(obj: T | ReferenceObject, config: ParsedConfig): T {
+function resolveReference<T>(obj: T | ReferenceObject, { $refs }: { $refs: $RefParser.$Refs }): T {
     if (!isReference(obj)) {
         return obj;
     }
 
-    return config.$refs.get(obj.$ref) as unknown as T;
+    return $refs.get(obj.$ref) as unknown as T;
 }
 
 /** Check if specified Object is a reference. */
