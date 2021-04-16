@@ -1,10 +1,10 @@
 import * as ajvOpenApi from "ajv-openapi";
 
-import type { FastifyInstance, FastifyServerOptions, RouteHandler } from "fastify";
+import type { FastifyInstance, FastifyServerOptions } from "fastify";
 import type { Ajv, Options as AjvOptions } from "ajv";
 
 import parse, { ParsedRoute } from "./parser";
-import { ControllerOptions, createHandler } from "./resolution";
+import { ControllerOptions, createHandler, AnyRouteHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
 export interface FastifyOApiOptions extends ControllerOptions {
@@ -61,7 +61,7 @@ export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], u
     };
 }
 
-function createWrappedHandler(route: ParsedRoute, controllerHandler: RouteHandler): RouteHandler {
+function createWrappedHandler(route: ParsedRoute, controllerHandler: AnyRouteHandler): AnyRouteHandler {
     if (!route.wildcard) {
         return controllerHandler;
     }
