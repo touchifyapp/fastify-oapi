@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.1...v1.5.2) (2021-04-17)
+
+
+### Bug Fixes
+
+* allow any route handlers in controllers ([9ff6e8b](https://github.com/touchifyapp/fastify-oapi/commit/9ff6e8ba99fa98a365ae5b2ba135f83c934d2199))
+
 ## [1.5.1](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.0...v1.5.1) (2021-01-24)
 
 
