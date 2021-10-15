@@ -40,7 +40,7 @@ describe("Config", () => {
         await expect(fastify.ready())
             .rejects.toHaveProperty(
                 "message",
-                "The 'specification' parameter must contain a valid version 3.0.x specification"
+                "The 'specification' parameter must contain a valid version 3.x specification"
             );
     });
 
@@ -72,6 +72,19 @@ describe("Config", () => {
 
         const fastify = createFastify({
             specification: spec301,
+            controller: CONTROLLER_FILE
+        });
+
+        await expect(fastify.ready())
+            .resolves.toBe(fastify);
+    });
+
+    test("should load V3.1.0 definition with no error", async () => {
+        const spec310 = JSON.parse(JSON.stringify(PETSTORE_SPEC));
+        spec310["openapi"] = "3.1.0";
+
+        const fastify = createFastify({
+            specification: spec310,
             controller: CONTROLLER_FILE
         });
 

@@ -46,8 +46,8 @@ export interface ParsedRoute {
 export default async function parse(specOrPath: string | OpenAPIObject): Promise<ParsedConfig> {
     const spec = await bundleSpecification(specOrPath); //await dereference(specOrPath);
 
-    if (!spec?.openapi?.startsWith("3.0")) {
-        throw new Error("The 'specification' parameter must contain a valid version 3.0.x specification");
+    if (!spec?.openapi?.startsWith("3.")) {
+        throw new Error("The 'specification' parameter must contain a valid version 3.x specification");
     }
 
     const $refs = await $RefParser.resolve(spec);
