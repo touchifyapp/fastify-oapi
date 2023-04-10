@@ -1,9 +1,7 @@
-import { FastifySchema, RouteHandler, HTTPMethods } from "fastify";
+import type { FastifySchema, RouteHandler, HTTPMethods } from "fastify";
+import type { oas30 } from "openapi3-ts";
 
 import { $RefParser } from "@apidevtools/json-schema-ref-parser";
-
-import { oas30 } from "openapi3-ts";
-
 import { omit } from "./util";
 
 const HttpOperations = new Set(["delete", "get", "head", "patch", "post", "put", "options"]);
@@ -61,9 +59,6 @@ type OpenAPIObjectWithDefs = oas30.OpenAPIObject & { definitions?: Record<string
 type SharedSchema = oas30.SchemaObject & {
     $id: string;
     definitions: Record<string, oas30.SchemaObject>;
-    components: {
-        schemas: Record<string, oas30.SchemaObject>;
-    };
 };
 
 function createSharedSchema(spec: OpenAPIObjectWithDefs, $refs: $Refs): SharedSchema | undefined {
@@ -73,9 +68,9 @@ function createSharedSchema(spec: OpenAPIObjectWithDefs, $refs: $Refs): SharedSc
 
     return {
         $id: "urn:schema:api",
-        definitions: parseSchemaItems(spec.definitions, { $refs }),
-        components: {
-            schemas: parseSchemaItems(spec.components?.schemas, { $refs }),
+        definitions: {
+            ...parseSchemaItems(spec.definitions, { $refs }),
+            ...parseSchemaItems(spec.components?.schemas, { $refs }),
         },
     };
 }
@@ -303,7 +298,8 @@ function parseSchemaItems(item: any, config: { $refs: $Refs }): any {
         }
 
         if (isReference(item)) {
-            return { $ref: "urn:schema:api" + item.$ref }; //item.$ref.replace("#/components/schemas", "urn:schema:api#/definitions") };
+            // return { $ref: "urn:schema:api" + item.$ref };
+            return { $ref: item.$ref.replace("#/components/schemas", "urn:schema:api#/definitions") };
         }
 
         const res: any = {};

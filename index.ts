@@ -1,6 +1,7 @@
 import fp from "fastify-plugin";
 import { plugin } from "./lib/plugin";
 
+export * from "./lib/ajv";
 export * from "./lib/plugin";
 
 export default fp(plugin, {
