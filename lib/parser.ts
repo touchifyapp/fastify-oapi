@@ -1,34 +1,19 @@
 import { FastifySchema, RouteHandler, HTTPMethods } from "fastify";
 
-import * as $RefParser from "@apidevtools/json-schema-ref-parser";
+import { $RefParser } from "@apidevtools/json-schema-ref-parser";
 
-import {
-    OpenAPIObject,
-    PathItemObject,
-    OperationObject,
-    ParameterObject,
-    RequestBodyObject,
-    ResponseObject,
-    SchemaObject,
-    ReferenceObject
-} from "openapi3-ts";
+import { oas30 } from "openapi3-ts";
 
 import { omit } from "./util";
 
-const HttpOperations = new Set([
-    "delete",
-    "get",
-    "head",
-    "patch",
-    "post",
-    "put",
-    "options"
-]);
+const HttpOperations = new Set(["delete", "get", "head", "patch", "post", "put", "options"]);
+
+export type $Refs = $RefParser["$refs"];
 
 export interface ParsedConfig {
-    $refs: $RefParser.$Refs;
-    shared: SchemaObject | undefined;
-    generic: Omit<OpenAPIObject, "paths">;
+    $refs: $Refs;
+    shared: oas30.SchemaObject | undefined;
+    generic: Omit<oas30.OpenAPIObject, "paths">;
     routes: ParsedRoute[];
     prefix?: string;
 }
@@ -38,12 +23,12 @@ export interface ParsedRoute {
     url: string;
     schema: FastifySchema;
     operationId: string;
-    openapiSource: OperationObject;
+    openapiSource: oas30.OperationObject;
     wildcard?: string;
     handler?: RouteHandler;
 }
 
-export default async function parse(specOrPath: string | OpenAPIObject): Promise<ParsedConfig> {
+export default async function parse(specOrPath: string | oas30.OpenAPIObject): Promise<ParsedConfig> {
     const spec = await bundleSpecification(specOrPath); //await dereference(specOrPath);
 
     if (!spec?.openapi?.startsWith("3.0")) {
@@ -58,12 +43,11 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
         routes: [],
     };
 
-    const keys = Object.keys(spec) as Array<keyof OpenAPIObject>;
-    keys.forEach(key => {
+    const keys = Object.keys(spec) as Array<keyof oas30.OpenAPIObject>;
+    keys.forEach((key) => {
         if (key === "paths") {
             processPaths(config, spec.paths);
-        }
-        else {
+        } else {
             config.generic[key] = spec[key];
         }
     });
@@ -73,7 +57,16 @@ export default async function parse(specOrPath: string | OpenAPIObject): Promise
 
 //#region Parser
 
-function createSharedSchema(spec: OpenAPIObject, $refs: $RefParser.$Refs): SchemaObject | undefined {
+type OpenAPIObjectWithDefs = oas30.OpenAPIObject & { definitions?: Record<string, oas30.SchemaObject> };
+type SharedSchema = oas30.SchemaObject & {
+    $id: string;
+    definitions: Record<string, oas30.SchemaObject>;
+    components: {
+        schemas: Record<string, oas30.SchemaObject>;
+    };
+};
+
+function createSharedSchema(spec: OpenAPIObjectWithDefs, $refs: $Refs): SharedSchema | undefined {
     if (!spec.definitions && !spec.components?.schemas) {
         return;
     }
@@ -82,13 +75,13 @@ function createSharedSchema(spec: OpenAPIObject, $refs: $RefParser.$Refs): Schem
         $id: "urn:schema:api",
         definitions: parseSchemaItems(spec.definitions, { $refs }),
         components: {
-            schemas: parseSchemaItems(spec.components?.schemas, { $refs })
-        }
+            schemas: parseSchemaItems(spec.components?.schemas, { $refs }),
+        },
     };
 }
 
 /** Process OpenAPI Paths. */
-function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject>): void {
+function processPaths(config: ParsedConfig, paths: Record<string, oas30.PathItemObject>): void {
     const copyItems = ["summary", "description"];
 
     for (const path in paths) {
@@ -101,8 +94,8 @@ function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject
             parseParameters(config, genericSchema, pathItem.parameters);
         }
 
-        Object.keys(pathItem).forEach(verb => {
-            const operation = pathItem[verb];
+        Object.keys(pathItem).forEach((verb) => {
+            const operation = pathItem[verb as keyof oas30.PathItemObject];
             if (isHttpVerb(verb) && operation) {
                 processOperation(config, path, verb, operation, pathItem, genericSchema);
             }
@@ -111,7 +104,14 @@ function processPaths(config: ParsedConfig, paths: Record<string, PathItemObject
 }
 
 /** Build fastify RouteSchema and add it to routes. */
-function processOperation(config: ParsedConfig, path: string, method: string, operation: OperationObject, pathItem: PathItemObject, genericSchema: FastifySchema): void {
+function processOperation(
+    config: ParsedConfig,
+    path: string,
+    method: string,
+    operation: oas30.OperationObject,
+    pathItem: oas30.PathItemObject,
+    genericSchema: FastifySchema
+): void {
     if (!operation) {
         return;
     }
@@ -121,14 +121,18 @@ function processOperation(config: ParsedConfig, path: string, method: string, op
         ...makeURL(path, pathItem, operation, config),
         schema: parseOperationSchema(config, genericSchema, operation),
         operationId: operation.operationId || makeOperationId(method, path),
-        openapiSource: operation
+        openapiSource: operation,
     };
 
     config.routes.push(route);
 }
 
 /** Build fastify RouteSchema based on OpenAPI Operation */
-function parseOperationSchema(config: ParsedConfig, genericSchema: FastifySchema, operation: OperationObject): FastifySchema {
+function parseOperationSchema(
+    config: ParsedConfig,
+    genericSchema: FastifySchema,
+    operation: oas30.OperationObject
+): FastifySchema {
     const schema = Object.assign({}, genericSchema);
 
     copyProps(operation, schema, ["tags", "summary", "description", "operationId"]);
@@ -151,12 +155,16 @@ function parseOperationSchema(config: ParsedConfig, genericSchema: FastifySchema
 }
 
 /** Parse Open API params for Query/Params/Headers and include them into FastifySchema. */
-function parseParameters(config: ParsedConfig, schema: FastifySchema, parameters: Array<ParameterObject | ReferenceObject>): void {
-    const params: ParameterObject[] = [];
-    const querystring: ParameterObject[] = [];
-    const headers: ParameterObject[] = [];
+function parseParameters(
+    config: ParsedConfig,
+    schema: FastifySchema,
+    parameters: Array<oas30.ParameterObject | oas30.ReferenceObject>
+): void {
+    const params: oas30.ParameterObject[] = [];
+    const querystring: oas30.ParameterObject[] = [];
+    const headers: oas30.ParameterObject[] = [];
 
-    parameters.forEach(item => {
+    parameters.forEach((item) => {
         item = resolveReference(item, config);
         switch (item.in) {
             case "path":
@@ -172,26 +180,30 @@ function parseParameters(config: ParsedConfig, schema: FastifySchema, parameters
     });
 
     if (params.length > 0) {
-        schema.params = parseParams(config, schema.params as SchemaObject, params);
+        schema.params = parseParams(config, schema.params as oas30.SchemaObject, params);
     }
 
     if (querystring.length > 0) {
-        schema.querystring = parseParams(config, schema.querystring as SchemaObject, querystring);
+        schema.querystring = parseParams(config, schema.querystring as oas30.SchemaObject, querystring);
     }
 
     if (headers.length > 0) {
-        schema.headers = parseParams(config, schema.headers as SchemaObject, headers);
+        schema.headers = parseParams(config, schema.headers as oas30.SchemaObject, headers);
     }
 }
 
 /** Parse Open API params for Query/Params/Headers. */
-function parseParams(config: ParsedConfig, base: SchemaObject | undefined, parameters: ParameterObject[]): SchemaObject {
-    const properties: Record<string, SchemaObject | ReferenceObject> = {};
+function parseParams(
+    config: ParsedConfig,
+    base: oas30.SchemaObject | undefined,
+    parameters: oas30.ParameterObject[]
+): oas30.SchemaObject {
+    const properties: Record<string, oas30.SchemaObject | oas30.ReferenceObject> = {};
 
     const required: string[] = [];
     const baseRequired = new Set(base?.required ?? []);
 
-    parameters.forEach(item => {
+    parameters.forEach((item) => {
         let itemName = item.name;
         if (item["x-wildcard"] === true) {
             itemName = "*";
@@ -210,21 +222,25 @@ function parseParams(config: ParsedConfig, base: SchemaObject | undefined, param
         }
     });
 
-    return base ?
-        {
-            type: "object",
-            properties: Object.assign({}, base.properties, properties),
-            required: [...baseRequired, ...required]
-        } :
-        {
-            type: "object",
-            properties, required
-        };
+    return base
+        ? {
+              type: "object",
+              properties: Object.assign({}, base.properties, properties),
+              required: [...baseRequired, ...required],
+          }
+        : {
+              type: "object",
+              properties,
+              required,
+          };
 }
 
 /** Parse Open API responses */
-function parseResponses(config: ParsedConfig, responses?: Record<string, ResponseObject | ReferenceObject>): Record<string, SchemaObject> | null {
-    const result: Record<string, SchemaObject> = {};
+function parseResponses(
+    config: ParsedConfig,
+    responses?: Record<string, oas30.ResponseObject | oas30.ReferenceObject>
+): Record<string, oas30.SchemaObject | oas30.ReferenceObject> | null {
+    const result: Record<string, oas30.SchemaObject | oas30.ReferenceObject> = {};
 
     let hasResponse = false;
     for (let httpCode in responses) {
@@ -244,7 +260,10 @@ function parseResponses(config: ParsedConfig, responses?: Record<string, Respons
 }
 
 /** Parse Open API content contract to prepare RouteSchema */
-function parseBody(config: ParsedConfig, body?: RequestBodyObject | ResponseObject | ReferenceObject): SchemaObject | ReferenceObject | undefined {
+function parseBody(
+    config: ParsedConfig,
+    body?: oas30.RequestBodyObject | oas30.ResponseObject | oas30.ReferenceObject
+): oas30.SchemaObject | oas30.ReferenceObject | undefined {
     body = resolveReference(body, config);
 
     if (body?.content?.["application/json"]) {
@@ -253,35 +272,32 @@ function parseBody(config: ParsedConfig, body?: RequestBodyObject | ResponseObje
 }
 
 /** Parse a schema and inject shared reference if needed. */
-function parseSchema(schema: SchemaObject | ReferenceObject | undefined, config: { $refs: $RefParser.$Refs }): SchemaObject | ReferenceObject {
+function parseSchema(
+    schema: oas30.SchemaObject | oas30.ReferenceObject | undefined,
+    config: { $refs: $Refs }
+): oas30.SchemaObject | oas30.ReferenceObject {
     if (!schema) return {};
     return parseSchemaItems(schema, config);
 }
 
-function parseSchemaItems(item: any, config: { $refs: $RefParser.$Refs }): any {
+function parseSchemaItems(item: any, config: { $refs: $Refs }): any {
     if (!item) {
         return item;
     }
 
     if (Array.isArray(item)) {
-        return item.map(c => parseSchemaItems(c, config));
+        return item.map((c) => parseSchemaItems(c, config));
     }
 
     if (typeof item === "object") {
-        const {
-            "x-partial": xPartial,
-            ...itemSchema
-        } = item;
+        const { "x-partial": xPartial, ...itemSchema } = item;
 
         if (xPartial) {
-            const schema = isReference(itemSchema) ?
-                resolveReference(itemSchema, config) :
-                itemSchema;
+            const schema = isReference(itemSchema) ? resolveReference(itemSchema, config) : itemSchema;
 
             if (schema.required) {
                 item = omit(schema, ["required"]);
-            }
-            else {
+            } else {
                 item = itemSchema;
             }
         }
@@ -312,20 +328,23 @@ function parseSchemaItems(item: any, config: { $refs: $RefParser.$Refs }): any {
 function makeOperationId(method: string, path: string): string {
     const parts = path.split("/").slice(1);
 
-    return method + parts
-        .map(firstUpper)
-        .join("")
-        .replace(/{(\w+)}/g, (_, p1) => "By" + firstUpper(p1))
-        .replace(/[^a-z]/gi, "");
+    return (
+        method +
+        parts
+            .map(firstUpper)
+            .join("")
+            .replace(/{(\w+)}/g, (_, p1) => "By" + firstUpper(p1))
+            .replace(/[^a-z]/gi, "")
+    );
 }
 
 /** Bundle Specification file. */
-async function bundleSpecification(spec: string | OpenAPIObject): Promise<OpenAPIObject> {
-    return await $RefParser.bundle(spec) as OpenAPIObject;
+async function bundleSpecification(spec: string | oas30.OpenAPIObject): Promise<oas30.OpenAPIObject> {
+    return (await $RefParser.bundle(spec)) as oas30.OpenAPIObject;
 }
 
 /** Resolves external reference */
-function resolveReference<T>(obj: T | ReferenceObject, { $refs }: { $refs: $RefParser.$Refs }): T {
+function resolveReference<T>(obj: T | oas30.ReferenceObject, { $refs }: { $refs: $Refs }): T {
     if (!isReference(obj)) {
         return obj;
     }
@@ -334,12 +353,17 @@ function resolveReference<T>(obj: T | ReferenceObject, { $refs }: { $refs: $RefP
 }
 
 /** Check if specified Object is a reference. */
-function isReference(obj: any): obj is ReferenceObject {
+function isReference(obj: any): obj is oas30.ReferenceObject {
     return obj && "$ref" in obj;
 }
 
 /** Adjust URLs from OpenAPI to fastify. (openapi: 'path/{param}' => fastify: 'path/:param'). */
-function makeURL(path: string, pathItem: PathItemObject, operation: OperationObject, config: ParsedConfig): { url: string; wildcard?: string } {
+function makeURL(
+    path: string,
+    pathItem: oas30.PathItemObject,
+    operation: oas30.OperationObject,
+    config: ParsedConfig
+): { url: string; wildcard?: string } {
     let wildcard: string | undefined;
 
     const url = path.replace(/{(\w+)}/g, (_, paramName) => {
@@ -357,7 +381,7 @@ function makeURL(path: string, pathItem: PathItemObject, operation: OperationObj
 
 /** Copy the given list of properties from source to target. */
 function copyProps(source: Record<string, any>, target: Record<string, any>, list: string[]): void {
-    list.forEach(item => {
+    list.forEach((item) => {
         if (source[item]) {
             target[item] = source[item];
         }
@@ -368,19 +392,19 @@ function firstUpper(str: string): string {
     return str.substr(0, 1).toUpperCase() + str.substr(1);
 }
 
-function isHttpVerb(str: string): str is ("get" | "put" | "post" | "delete" | "options" | "head" | "trace") {
+function isHttpVerb(str: string): str is "get" | "put" | "post" | "delete" | "options" | "head" | "trace" {
     return HttpOperations.has(str);
 }
 
-function findParameter(paramName: string, pathItem: PathItemObject, operation: OperationObject, config: ParsedConfig): ParameterObject | undefined {
-    const parameters = [
-        ...pathItem.parameters || [],
-        ...operation.parameters || [],
-    ]
+function findParameter(
+    paramName: string,
+    pathItem: oas30.PathItemObject,
+    operation: oas30.OperationObject,
+    config: ParsedConfig
+): oas30.ParameterObject | undefined {
+    const parameters = [...(pathItem.parameters || []), ...(operation.parameters || [])];
 
-    return parameters
-        .map(p => resolveReference(p, config))
-        .find(p => p.in === "path" && p.name === paramName);
+    return parameters.map((p) => resolveReference(p, config)).find((p) => p.in === "path" && p.name === paramName);
 }
 
 //#endregion

@@ -1,7 +1,6 @@
-
 const unknownFormats: Record<string, boolean> = {
     int32: true,
-    int64: true
+    int64: true,
 };
 
 export function stripResponseFormats(schema: Record<string, any>): void {
@@ -18,7 +17,11 @@ export function stripResponseFormats(schema: Record<string, any>): void {
 
 export const entries = Object.entries as <T>(k: T) => ReadonlyArray<[keyof T, T[keyof T]]>;
 
-export function omit<T, K extends ReadonlyArray<keyof T>, B extends Record<string, unknown>>(src: T, keys?: K, base = {} as B): B & Omit<T, K[number]> {
+export function omit<T, K extends ReadonlyArray<keyof T>, B extends Record<string, unknown>>(
+    src: T,
+    keys?: K,
+    base = {} as B
+): B & Omit<T, K[number]> {
     if (!keys || keys.length === 0) return { ...base, ...src };
     return entries(src)
         .filter(([k]) => !keys.includes(k))

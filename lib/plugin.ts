@@ -18,8 +18,7 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
 
     if (options.prefix) {
         routeConf.prefix = options.prefix;
-    }
-    else if (config.prefix) {
+    } else if (config.prefix) {
         routeConf.prefix = config.prefix;
     }
 
@@ -41,8 +40,8 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
                 ...route,
                 handler: createWrappedHandler(route, controllerHandler),
                 config: {
-                    oapi: route.openapiSource
-                }
+                    oapi: route.openapiSource,
+                },
             });
         }
     }
@@ -51,13 +50,14 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
 export type AjvPlugin = (ajv: Ajv) => Ajv;
 export type AjvPluginInit = AjvPlugin | [AjvPlugin] | [AjvPlugin, any];
 
-export function getAjvOptions(options?: AjvOptions, plugins?: AjvPluginInit[], useDraft04?: boolean): NonNullable<FastifyServerOptions["ajv"]> {
+export function getAjvOptions(
+    options?: AjvOptions,
+    plugins?: AjvPluginInit[],
+    useDraft04?: boolean
+): NonNullable<FastifyServerOptions["ajv"]> {
     return {
         customOptions: ajvOpenApi.createOptions(options),
-        plugins: [
-            [ajvOpenApi, { useDraft04 }],
-            ...(plugins as any[] || [])
-        ]
+        plugins: [[ajvOpenApi, { useDraft04 }], ...((plugins as any[]) || [])],
     };
 }
 

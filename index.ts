@@ -5,5 +5,5 @@ export * from "./lib/plugin";
 
 export default fp(plugin, {
     fastify: ">=2.0.0",
-    name: "fastify-oapi"
+    name: "fastify-oapi",
 });

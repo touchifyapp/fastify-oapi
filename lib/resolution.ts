@@ -12,7 +12,7 @@ export type AnyRouteHandler = RouteHandler<{
 }>;
 
 export type Controller = Record<string, AnyRouteHandler>;
-export type ControllerConstructor = { new(): Controller };
+export type ControllerConstructor = { new (): Controller };
 export type ControllerFactory = () => Controller | Promise<Controller>;
 
 export type ControllerResolution = "per-route" | "per-operation" | "manual" | "unique";
@@ -28,8 +28,7 @@ export interface ControllerOptions {
 export async function createHandler(route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler> {
     const resolutions = getDefaultResolution(options);
     if (!Array.isArray(resolutions)) {
-        return await createControllerHandler(resolutions, route, options) ||
-            createControllerDefaultHandler(route);
+        return (await createControllerHandler(resolutions, route, options)) || createControllerDefaultHandler(route);
     }
 
     for (const resolution of resolutions) {
@@ -50,8 +49,7 @@ export async function createController(config: ControllerConfig, options: Contro
     if (typeof config === "function") {
         if (isControllerConstructor(config)) {
             return createController(new config(), options);
-        }
-        else {
+        } else {
             return createController(await resolvePromise(config), options);
         }
     }
@@ -63,7 +61,11 @@ export async function createController(config: ControllerConfig, options: Contro
     throw new Error("The controller should be an `object`, a `function` or a `constructor`");
 }
 
-async function createControllerHandler(resolution: ControllerResolution, route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler | void> {
+async function createControllerHandler(
+    resolution: ControllerResolution,
+    route: ParsedRoute,
+    options: ControllerOptions
+): Promise<AnyRouteHandler | void> {
     switch (resolution) {
         case "manual":
             return createControllerManualHandler(route, options);
@@ -76,7 +78,10 @@ async function createControllerHandler(resolution: ControllerResolution, route: 
     }
 }
 
-async function createControllerManualHandler(route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler | void> {
+async function createControllerManualHandler(
+    route: ParsedRoute,
+    options: ControllerOptions
+): Promise<AnyRouteHandler | void> {
     const config = options.resolutionConfig;
     assert(config, "The `manual` resolution mode needs a `resolutionConfig` option");
 
@@ -103,7 +108,10 @@ async function createControllerManualHandler(route: ParsedRoute, options: Contro
     }
 }
 
-async function createControllerUniqueHandler(route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler | void> {
+async function createControllerUniqueHandler(
+    route: ParsedRoute,
+    options: ControllerOptions
+): Promise<AnyRouteHandler | void> {
     const controller = options.controller;
     assert(controller, "The `unique` resolution mode needs a `controller` option");
 
@@ -111,7 +119,10 @@ async function createControllerUniqueHandler(route: ParsedRoute, options: Contro
     return built[route.operationId];
 }
 
-async function createControllerPerOperationHandler(route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler | void> {
+async function createControllerPerOperationHandler(
+    route: ParsedRoute,
+    options: ControllerOptions
+): Promise<AnyRouteHandler | void> {
     assert(options.controllersDir, "The `per-operation` resolution mode needs a `controllersDir` option");
 
     const xController = route.openapiSource["x-controller"];
@@ -121,7 +132,10 @@ async function createControllerPerOperationHandler(route: ParsedRoute, options: 
     }
 }
 
-async function createControllerPerRouteHandler(route: ParsedRoute, options: ControllerOptions): Promise<AnyRouteHandler | void> {
+async function createControllerPerRouteHandler(
+    route: ParsedRoute,
+    options: ControllerOptions
+): Promise<AnyRouteHandler | void> {
     assert(options.controllersDir, "The `per-route` resolution mode needs a `controllersDir` option");
 
     let [scope] = route.url.replace(/^\//, "").split("/");
@@ -160,7 +174,10 @@ function getDefaultResolution(options: ControllerOptions): ControllerResolution 
     throw new Error("Cannot determine the default controller resolution mode");
 }
 
-function importController(name: string, options: ControllerOptions): Controller | ControllerFactory | ControllerConstructor {
+function importController(
+    name: string,
+    options: ControllerOptions
+): Controller | ControllerFactory | ControllerConstructor {
     try {
         if (name.startsWith("./")) {
             return require(name);
@@ -171,9 +188,8 @@ function importController(name: string, options: ControllerOptions): Controller 
         }
 
         return require(name);
-    }
-    catch (err) {
-        throw new Error(`Error while importing controller "${name}": ${err.message}`);
+    } catch (err) {
+        throw new Error(`Error while importing controller "${name}": ${(err as Error).message}`);
     }
 }
 
