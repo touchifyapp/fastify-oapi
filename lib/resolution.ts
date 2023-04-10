@@ -1,8 +1,8 @@
 import * as path from "path";
 import { ok } from "assert";
 
-import { RouteHandler } from "fastify";
-import { ParsedRoute } from "./parser";
+import type { RouteHandler } from "fastify";
+import type { ParsedRoute } from "./parser";
 
 export type AnyRouteHandler = RouteHandler<{
     Body: any;

@@ -14,6 +14,15 @@
 npm install fastify-oapi
 ```
 
+## Compatibility matrix
+
+| `fastify-oapi` version | `fastify` version |
+|------------------------|-------------------|
+| `v1.x`                 | `v3.x`            |
+| `v2.x`                 | `v4.x` *          |
+
+_* Fastify v4 uses Ajv v8 per default. So it's not possible to use json schema draft-04 to fully align to OpenAPI v3.0 specification._
+
 ## Simple Usage
 
 ```typescript
@@ -49,20 +58,18 @@ await fastify.listen(3000);
 
 ## Configure Fastify Ajv instance
 
-To be fully Open API v3 compliant, you have to extend the default Fastify `Ajv` instance. `fastify-oapi` provides `ajv-openapi` plugin to help.
-
-To make things easy, `fastify-oapi` provides the `getAjvOptions()` function.
+To allow some openapi extensions `fastify-oapi` provides an `ajv` plugin. To enable the plugin, `fastify-oapi` provides the `getAjvOptions()` help.
 
 ```typescript
 import * as Fastify from "fastify";
 import { getAjvOptions } from "fastify-oapi";
 
-// Add ajv-openapi plugin with default options
+// Add ajv plugin with no options
 fastify = Fastify({
     ajv: getAjvOptions()
 });
 
-// Add Ajv custom options
+// Extends Ajv custom options
 fastify = Fastify({
     ajv: getAjvOptions(
         { removeAdditional: false }
@@ -78,18 +85,6 @@ fastify = Fastify({
         ]
     )
 });
-
-// Do not use json schema draft 04
-fastify = Fastify({
-    ajv: getAjvOptions(
-        { removeAdditional: false },
-        [
-            [otherPlugin, otherPluginOptions]
-        ],
-        false
-    )
-});
-```
 
 ## Controller Resolution
 

@@ -1,10 +1,7 @@
-import * as ajvOpenApi from "ajv-openapi";
+import type { FastifyInstance } from "fastify";
 
-import type { FastifyInstance, FastifyServerOptions } from "fastify";
-import type { Ajv, Options as AjvOptions } from "ajv";
-
-import parse, { ParsedRoute } from "./parser";
-import { ControllerOptions, createHandler, AnyRouteHandler } from "./resolution";
+import parse, { type ParsedRoute } from "./parser";
+import { type ControllerOptions, createHandler, type AnyRouteHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
 export interface FastifyOApiOptions extends ControllerOptions {
@@ -45,20 +42,6 @@ export async function plugin(fastify: FastifyInstance, options: FastifyOApiOptio
             });
         }
     }
-}
-
-export type AjvPlugin = (ajv: Ajv) => Ajv;
-export type AjvPluginInit = AjvPlugin | [AjvPlugin] | [AjvPlugin, any];
-
-export function getAjvOptions(
-    options?: AjvOptions,
-    plugins?: AjvPluginInit[],
-    useDraft04?: boolean
-): NonNullable<FastifyServerOptions["ajv"]> {
-    return {
-        customOptions: ajvOpenApi.createOptions(options),
-        plugins: [[ajvOpenApi, { useDraft04 }], ...((plugins as any[]) || [])],
-    };
 }
 
 function createWrappedHandler(route: ParsedRoute, controllerHandler: AnyRouteHandler): AnyRouteHandler {
