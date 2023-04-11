@@ -1,14 +1,19 @@
 # [2.0.0](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.3...v2.0.0) (2023-04-11)
 
 
+### Features
+
+* migrate to fastify v4
+
 ### Documentation
 
 * remove david-dm badge ([29c284d](https://github.com/touchifyapp/fastify-oapi/commit/29c284df38a83afdd8e79b8407a10582e6c86a5e))
 
-
 ### BREAKING CHANGES
 
-* force release
+* break fastify v3 compatibility
+* remove ajv-openapi
+* remove json-schema draft-04 support
 
 ## [1.5.3](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.2...v1.5.3) (2023-04-10)
 
