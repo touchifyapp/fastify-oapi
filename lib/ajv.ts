@@ -9,7 +9,10 @@ export function getAjvOptions(
     plugins: AjvPlugins = []
 ): NonNullable<FastifyServerOptions["ajv"]> {
     return {
-        customOptions: options,
+        customOptions: {
+            coerceTypes: "array",
+            ...options
+        },
         plugins: [oapiKeywordsPlugin, ...plugins],
     };
 }

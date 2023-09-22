@@ -1,6 +1,7 @@
 # Built result
 *.d.ts
 *.js
+!*.config.js
 
 # Test results
 coverage/
