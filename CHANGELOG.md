@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/touchifyapp/fastify-oapi/compare/v2.0.0...v2.0.1) (2023-09-25)
+
+
+### Bug Fixes
+
+* allow openapi v3.1 ([99404d1](https://github.com/touchifyapp/fastify-oapi/commit/99404d1105ab525b25681306e27ed39adb42ac51))
+
 # [2.0.0](https://github.com/touchifyapp/fastify-oapi/compare/v1.5.3...v2.0.0) (2023-04-11)
 
 
