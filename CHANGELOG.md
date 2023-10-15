@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/touchifyapp/fastify-oapi/compare/v2.0.1...v2.1.0) (2023-10-15)
+
+
+### Features
+
+* allow to pass a spec as an object ([a02e392](https://github.com/touchifyapp/fastify-oapi/commit/a02e3924dc7408834cecf0e40f2ca5bb2ea4ea15))
+
 ## [2.0.1](https://github.com/touchifyapp/fastify-oapi/compare/v2.0.0...v2.0.1) (2023-09-25)
 
 
