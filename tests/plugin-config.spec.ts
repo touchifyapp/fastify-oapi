@@ -1,3 +1,4 @@
+import { bundleSpecification } from "../lib/parser";
 import { createFastify } from "./helpers";
 
 const PETSTORE_SPEC = require("./assets/petstore-openapi.json");
@@ -54,6 +55,18 @@ describe("Config", () => {
                 "message",
                 "Cannot determine the default controller resolution mode"
             );
+    });
+
+    test("should load exploded PetStore V3 specification if prebundled", async () => {
+        const exploded_spec = await bundleSpecification(__dirname + "/assets/petstore-exploded.yaml");
+
+        const fastify = createFastify({
+            specification: exploded_spec,
+            controller: CONTROLLER_FILE
+        });
+
+        await expect(fastify.ready())
+            .resolves.toBe(fastify);
     });
 
     test("should load full PetStore V3 specification with no error ", async () => {

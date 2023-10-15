@@ -48,6 +48,15 @@ export default async function parse(specOrPath: string | oas31.OpenAPIObject): P
     return config;
 }
 
+/** Bundle Specification file. */
+export async function bundleSpecification(spec: string | oas31.OpenAPIObject, { path }: { path?: string } = {}): Promise<oas31.OpenAPIObject> {
+    if (path) {
+        return (await $RefParser.bundle(path, spec, {})) as oas31.OpenAPIObject;
+    } else {
+        return (await $RefParser.bundle(spec)) as oas31.OpenAPIObject;
+    }
+}
+
 //#region Parser
 
 type OpenAPIObjectWithDefs = oas31.OpenAPIObject & { definitions?: Record<string, oas31.SchemaObject> };
@@ -329,11 +338,6 @@ function makeOperationId(method: string, path: string): string {
             .replace(/{(\w+)}/g, (_, p1) => "By" + firstUpper(p1))
             .replace(/[^a-z]/gi, "")
     );
-}
-
-/** Bundle Specification file. */
-async function bundleSpecification(spec: string | oas31.OpenAPIObject): Promise<oas31.OpenAPIObject> {
-    return (await $RefParser.bundle(spec)) as oas31.OpenAPIObject;
 }
 
 /** Resolves external reference */

@@ -1,11 +1,12 @@
 import type { FastifyInstance } from "fastify";
+import type { oas31 } from "openapi3-ts";
 
 import parse, { type ParsedRoute } from "./parser";
 import { type ControllerOptions, createHandler, type AnyRouteHandler } from "./resolution";
 import { stripResponseFormats } from "./util";
 
 export interface FastifyOApiOptions extends ControllerOptions {
-    specification: string;
+    specification: string | oas31.OpenAPIObject;
     prefix?: string;
 }
 
