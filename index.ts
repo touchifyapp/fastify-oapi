@@ -5,7 +5,7 @@ export * from "./lib/ajv";
 export * from "./lib/plugin";
 
 export { bundleSpecification } from "./lib/parser";
-export type { oas31 } from "openapi3-ts";
+export type * from "openapi3-ts/oas31";
 
 export default fp(plugin, {
     fastify: ">=2.0.0",
