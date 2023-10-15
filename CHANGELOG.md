@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/touchifyapp/fastify-oapi/compare/v2.1.0...v2.1.1) (2023-10-15)
+
+
+### Bug Fixes
+
+* export openapi types directly ([7d0bddf](https://github.com/touchifyapp/fastify-oapi/commit/7d0bddf0933c57dd822ffbe5524a55fef8172f8a))
+
 # [2.1.0](https://github.com/touchifyapp/fastify-oapi/compare/v2.0.1...v2.1.0) (2023-10-15)
 
 
