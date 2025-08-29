@@ -16,11 +16,11 @@ npm install fastify-oapi
 ## Compatibility matrix
 
 | `fastify-oapi` version | `fastify` version |
-|------------------------|-------------------|
+| ---------------------- | ----------------- |
 | `v1.x`                 | `v3.x`            |
-| `v2.x`                 | `v4.x` *          |
+| `v2.x`                 | `v4.x`, `v5.x` \* |
 
-_* Fastify v4 uses Ajv v8 per default. So it's not possible to use json schema draft-04 to fully align to OpenAPI v3.0 specification._
+_\* Fastify v4 uses Ajv v8 per default. So it's not possible to use json schema draft-04 to fully align to OpenAPI v3.0 specification._
 
 ## Simple Usage
 
@@ -30,17 +30,17 @@ import fastifyOpenApi, { getAjvOptions } from "fastify-oapi";
 
 import * as controller from "./controller";
 
-const specification = __dirname + "/openapi.yml"
+const specification = __dirname + "/openapi.yml";
 
 // Extend Fastify Ajv options to be fully Open API v3 compliant
 fastify = Fastify({
-    ajv: getAjvOptions()
+  ajv: getAjvOptions(),
 });
 
 // Configure the plugin
 fastify.register(fastifyOpenApi, {
-    specification,
-    controller,
+  specification,
+  controller,
 });
 
 await fastify.listen(3000);
@@ -53,13 +53,13 @@ await fastify.listen(3000);
 - `controller`: When using `unique` resolution mode, this value is used to resolve to a controller for the API. See [Controller Resolution](#Controller-Resolution).
 - `controllersDir`: When using `per-route` or `per-operation` resolution mode, this value is used to determine where controllers are located. See [Controller Resolution](#Controller-Resolution).
 - `resolutionConfig`: When using `manual` resolution mode, this value is used to configure how routes are mapped to controllers. See [Controller Resolution](#Controller-Resolution).
-- `prefix`: Routes URL prefix *(eg: `/route` with `/v1` prefix create a `/v1/route` route)*.
+- `prefix`: Routes URL prefix _(eg: `/route` with `/v1` prefix create a `/v1/route` route)_.
 
 ## Configure Fastify Ajv instance
 
 To allow some openapi extensions `fastify-oapi` provides an `ajv` plugin. To enable the plugin, `fastify-oapi` provides the `getAjvOptions()` help.
 
-```typescript
+````typescript
 import * as Fastify from "fastify";
 import { getAjvOptions } from "fastify-oapi";
 
@@ -117,27 +117,29 @@ Examples:
     x-controller: petupdate.controller
     operationId: updatePet
     # This operation routes to `petupdate.controller` in `controllerDir`
-```
+````
 
 #### manual
 
 The mode `manual` allows to configure how routes will be mapped to controllers. The `resolutionConfig` option is an object where keys could be the route URL, a prefix for the route URL or a `RegExp` that matche the route URL. If not found, it use the `default` to route to the default controller. **It requires the `resolutionConfig` option.**
 
 Examples:
+
 ```typescript
 const options = {
-    resolution: "manual",
-    controllersDir: "./controllers",
-    resolutionConfig: {
-        "/pets": "pets.controller",
-        "/orders/(.*)/action": "orders-action.controller",
-        "/orders(.*)": "orders.controller",
-        default: "default.controller"
-    }
+  resolution: "manual",
+  controllersDir: "./controllers",
+  resolutionConfig: {
+    "/pets": "pets.controller",
+    "/orders/(.*)/action": "orders-action.controller",
+    "/orders(.*)": "orders.controller",
+    default: "default.controller",
+  },
 };
 ```
 
 Using the configuration below:
+
 - `/pets` routes to `pets.controller.js` in `controllersDir`.
 - `/pets/:petId` routes to `pets.controller.js` in `controllersDir`.
 - `/pets/getByStatus` routes to `pets.controller.js` in `controllersDir`.
@@ -165,6 +167,7 @@ If the `resolution` option is not provided, the engine will try to look for opti
 `fastify-oapi` supports the `x-partial` Open API extension which allows to override `required` configuration of JSON Schemas. It is useful to easily allow some operations to returns partial entities while keeping shared schemas intact.
 
 Examples:
+
 ```yaml
 /partial:
   get:
