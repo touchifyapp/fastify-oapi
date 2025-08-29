@@ -1,6 +1,6 @@
 {
   "name": "fastify-oapi",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Fastify plugin to make your fastify server fully compliant with Open API v3",
   "author": "Touchify <dev@touchify.co>",
   "license": "MIT",

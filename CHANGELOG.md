@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/touchifyapp/fastify-oapi/compare/v2.1.1...v2.1.2) (2025-08-29)
+
+
+### Bug Fixes
+
+* drop node 16, 18 ([4fc3936](https://github.com/touchifyapp/fastify-oapi/commit/4fc39364818d896b103d9056203814e0be82a9b2))
+
 ## [2.1.1](https://github.com/touchifyapp/fastify-oapi/compare/v2.1.0...v2.1.1) (2023-10-15)
 
 
